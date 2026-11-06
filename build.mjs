@@ -1,11 +1,20 @@
 // Build: node build.mjs
-// Source of truth is src/template.html (English). This writes:
-//   en/index.html  English page
-//   ma/index.html  Marathi page (text copied from the printed Marathi card; parents only)
-//   index.html     root: sends visitors to /en/ or /ma/ (remembers the toggle choice)
+// Source of truth is src/template.html (English). This writes the deployable site into dist/:
+//   dist/en/index.html  English page
+//   dist/ma/index.html  Marathi page (text copied from the printed Marathi card; parents only)
+//   dist/index.html     root: sends visitors to /en/ or /ma/ (remembers the toggle choice)
+//   dist/404.html       not-found page (its presence also turns off Cloudflare Pages' SPA fallback)
+//   dist/_headers       Cloudflare Pages response headers
+//   dist/assets/..., dist/photoN.jpg  copied from the repo
 // Every Marathi replacement must match, otherwise the build stops with an error.
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+//
+// Cloudflare Pages settings: Build command `node build.mjs`, Build output directory `dist`.
+// Link previews (WhatsApp etc.) need absolute URLs. Set SITE_URL if the address is not the default,
+// e.g. a custom domain:  SITE_URL=https://vrishaliwedsvedant.com  (Pages > Settings > Variables).
+import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, readdirSync } from "node:fs";
 
+const SITE = (process.env.SITE_URL || "https://vrishaliwedsvedant.pages.dev").replace(/\/+$/, "");
+const OUT = new URL("./dist/", import.meta.url);
 const T = readFileSync(new URL("./src/template.html", import.meta.url), "utf8");
 const S = '<svg class="swas" aria-hidden="true"><use href="#swastika"/></svg>';
 
@@ -199,30 +208,101 @@ for (const must of ["Vrishali", "Vedant", "(D/o. Mrs. Archana &amp; Mr. Subhash 
   if (!en.includes(must)) { console.error("English check failed:", must); process.exit(1); }
 }
 
-mkdirSync(new URL("./en/", import.meta.url), { recursive: true });
-mkdirSync(new URL("./ma/", import.meta.url), { recursive: true });
-writeFileSync(new URL("./en/index.html", import.meta.url), en);
-writeFileSync(new URL("./ma/index.html", import.meta.url), mr);
+/* ---------- link previews, canonical URLs, search engines ----------
+   og:url/og:image must be absolute for WhatsApp/Facebook. noindex keeps the invite (names, phone
+   number) out of Google; link-preview bots still read the tags. robots.txt is deliberately not used
+   to block crawling, because some preview bots obey it and would then show no preview. */
+const ALT = `<link rel="alternate" hreflang="en" href="${SITE}/en/">
+<link rel="alternate" hreflang="mr" href="${SITE}/ma/">
+<link rel="alternate" hreflang="x-default" href="${SITE}/">`;
+const OG_IMG = (f) => `<meta property="og:image" content="${SITE}/assets/${f}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">`;
+const meta = (path, locale, img) => `<meta name="robots" content="noindex">
+<link rel="canonical" href="${SITE}${path}">
+${ALT}
+<meta property="og:type" content="website">
+<meta property="og:url" content="${SITE}${path}">
+<meta property="og:locale" content="${locale}">
+${OG_IMG(img)}
+`;
+// Inline favicon (burgundy disc, gold V&V) so browsers don't request a missing /favicon.ico.
+const ICON = '<link rel="icon" href="data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" fill="#5C2330" stroke="#C9A96A" stroke-width="2"/><text x="32" y="42" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="26" fill="#E8D3A0">V&amp;V</text></svg>') + '">';
+const THEME_TAG = '<meta name="theme-color" content="#5C2330">';
+const THEME = ICON + "\n" + THEME_TAG;
+const addMeta = (h, m) => {
+  if (h.split(THEME_TAG).length !== 2) { console.error("theme-color meta must appear exactly once"); process.exit(1); }
+  return h.replace(THEME_TAG, () => m + THEME);
+};
+
+/* ---------- write dist/ ---------- */
+rmSync(OUT, { recursive: true, force: true });
+mkdirSync(new URL("./en/", OUT), { recursive: true });
+mkdirSync(new URL("./ma/", OUT), { recursive: true });
+writeFileSync(new URL("./en/index.html", OUT), addMeta(en, meta("/en/", "en_IN", "og-en.jpg")));
+writeFileSync(new URL("./ma/index.html", OUT), addMeta(mr, meta("/ma/", "mr_IN", "og-mr.jpg")));
+
+// Site files: only what the pages use (web images, previews, photos). Masters/raw/ref stay out.
+mkdirSync(new URL("./assets/flow/", OUT), { recursive: true });
+for (const f of readdirSync(new URL("./assets/flow/", import.meta.url))) {
+  if (f.endsWith(".webp")) cpSync(new URL("./assets/flow/" + f, import.meta.url), new URL("./assets/flow/" + f, OUT));
+}
+for (const f of ["og-en.jpg", "og-mr.jpg"]) cpSync(new URL("./assets/" + f, import.meta.url), new URL("./assets/" + f, OUT));
+for (const n of [1, 2, 3, 4]) cpSync(new URL(`./photo${n}.jpg`, import.meta.url), new URL(`./photo${n}.jpg`, OUT));
+
+const ROOT_TITLE = "Vrishali &amp; Vedant · Wedding Invitation · वृषाली 卐 वेदांत";
+const ROOT_DESC = "Friday, 1 January 2027 · 10:30 AM · Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati";
+const PLAIN_CSS = "body{margin:0;min-height:100vh;display:grid;place-items:center;text-align:center;background:#5C2330;color:#F6EBCB;font-family:Georgia,serif}a{display:inline-block;color:#E8D3A0;font-size:20px;margin:0 8px;padding:12px 16px;min-height:44px;box-sizing:border-box}p{font-size:18px}";
 
 // Root page: remembers the last language chosen with the toggle, else browser language, else English.
-writeFileSync(new URL("./index.html", import.meta.url), `<!DOCTYPE html>
+// Hosted: absolute /en/ and /ma/. Opened from disk (file://): relative en/index.html.
+writeFileSync(new URL("./index.html", OUT), `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vrishali &amp; Vedant · Wedding Invitation · वृषाली 卐 वेदांत</title>
-<meta name="theme-color" content="#5C2330">
+<title>${ROOT_TITLE}</title>
+<meta name="description" content="${ROOT_DESC}">
+<meta property="og:title" content="${ROOT_TITLE}">
+<meta property="og:description" content="${ROOT_DESC}">
+${meta("/", "en_IN", "og-en.jpg")}${THEME}
 <script>
   (function () {
     var l = null;
     try { l = localStorage.getItem('vv-lang'); } catch (e) {}
     if (!l) l = /^mr\\b/i.test(navigator.language || '') ? 'mr' : 'en';
-    location.replace(l === 'mr' ? 'ma/' + (location.protocol === 'file:' ? 'index.html' : '') : 'en/' + (location.protocol === 'file:' ? 'index.html' : ''));
+    var d = l === 'mr' ? 'ma' : 'en';
+    location.replace(location.protocol === 'file:' ? d + '/index.html' : '/' + d + '/');
   })();
 </script>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#5C2330;font-family:Georgia,serif}a{color:#E8D3A0;font-size:20px;margin:0 16px}</style>
+<style>${PLAIN_CSS}</style>
 </head>
-<body><p><a href="en/index.html">English</a> <a href="ma/index.html" lang="mr">मराठी</a></p></body>
+<body><p><a href="/en/">English</a> <a href="/ma/" lang="mr">मराठी</a></p></body>
 </html>
 `);
-console.log("built en/index.html (" + en.length + " chars), ma/index.html (" + mr.length + " chars), index.html");
+
+// 404 page (also stops Pages from serving the root page for every unknown path).
+writeFileSync(new URL("./404.html", OUT), `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found · Vrishali &amp; Vedant</title>
+<meta name="robots" content="noindex">
+${THEME}
+<style>${PLAIN_CSS}</style>
+</head>
+<body><div><p>This page does not exist. · हे पान उपलब्ध नाही.</p><p><a href="/en/">Open the invitation</a> <a href="/ma/" lang="mr">निमंत्रण उघडा</a></p></div></body>
+</html>
+`);
+
+// Cloudflare Pages headers. Pages already sends nosniff and a referrer policy.
+// No custom caching: Pages' defaults (ETag revalidation, CDN cache until next deploy) are what Cloudflare recommends.
+writeFileSync(new URL("./_headers", OUT), `/*
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  X-Robots-Tag: noindex
+`);
+
+console.log("built dist/ for " + SITE + "  (en " + en.length + " chars, ma " + mr.length + " chars)");

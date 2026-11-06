@@ -1,3 +1,6 @@
+# Build output (Cloudflare Pages runs `node build.mjs` and serves dist/)
+dist/
+
 # Working folders (tests, screenshots, automation scripts, notes)
 _incoming/
 _test/
