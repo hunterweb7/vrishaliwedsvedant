@@ -22,7 +22,8 @@ const S = '<svg class="swas" aria-hidden="true"><use href="#swastika"/></svg>';
 const fixPaths = (h) =>
   h.replace(/(src|href)="(photo\d\.jpg|assets\/)/g, '$1="../$2')
    .replace(/url\((assets\/)/g, 'url(../$1')
-   .replace(/'(photo\d\.jpg)'/g, "'../$1'");
+   .replace(/'(photo\d\.jpg)'/g, "'../$1'")
+   .replace(/'(assets\/)/g, "'../$1");
 
 /* ---------- MARATHI TEXT (copied from the printed Marathi card) ----------
    Card front:  ॥शुभविवाह॥ · चि.सौ.कां. वृषाली 卐 चि. वेदांत · शुक्रवार दि. ०१ जानेवारी २०२७ रोजी · सकाळी १० वा. ३० मि. · सस्नेह निमंत्रण
@@ -95,8 +96,8 @@ const MR = [
   ['<p class="eyebrow" data-reveal="fade">The Couple</p>', '<p class="eyebrow" data-reveal="fade">वधू-वर</p>'],
   ['<span>Bride &amp; Groom</span></span></h2>', '<span>वधू व वर</span></span></h2>'],
   ['<p class="sub" data-reveal="up" style="--d:.3s">Vrishali with Vedant</p>', `<p class="sub" data-reveal="up" style="--d:.3s">वृषाली${S}वेदांत</p>`],
-  ['aria-label="Illustrated portrait of Vrishali"', 'aria-label="वृषालीचे चित्र"'],
-  ['aria-label="Illustrated portrait of Vedant"', 'aria-label="वेदांतचे चित्र"'],
+  ['alt="Illustrated portrait of Vrishali"', 'alt="वृषालीचे चित्र"'],
+  ['alt="Illustrated portrait of Vedant"', 'alt="वेदांतचे चित्र"'],
   ['<p class="eyebrow p-label">Bride</p>', '<p class="eyebrow p-label">वधू</p>'],
   ['<h3 class="p-name">Vrishali</h3>', '<h3 class="p-name">वृषाली</h3>'],
   ['<p class="p-par">D/o. Mrs. Archana &amp; Mr. Subhash Gulhane</p>', '<p class="p-par">सौ. अर्चना व श्री. सुभाषराव गुल्हाने<br>रा. सुरळी, जि. अमरावती, ह.मु. पुणे यांची कन्या</p>'],
@@ -105,7 +106,7 @@ const MR = [
   ['<p class="p-par">S/o Mrs. Priya &amp; Dr. Sanjay Tirathkar</p>', '<p class="p-par">सौ. प्रिया व प्रा.डॉ.श्री. संजयराव तिरथकर<br>रा. अमरावती यांचे चिरंजीव</p>'],
 
   // marquee
-  ["html += '<span class=\"mq-item\">Shubh Vivah<svg", "html += '<span class=\"mq-item\">शुभविवाह<svg"],
+  ["html += '<span class=\"mq-item\">Shubh Vivah<img", "html += '<span class=\"mq-item\">शुभविवाह<img"],
 
   // 5.5 countdown
   ['<p class="eyebrow" data-reveal="fade">Save the Date</p>', '<p class="eyebrow" data-reveal="fade">विवाह मुहूर्त</p>'],
@@ -165,7 +166,7 @@ const MR = [
   ["<h3>Groom's Family</h3><p>Mrs. Priya &amp; Dr. Sanjay Tirathkar</p>", '<h3>वराचे आई-वडील</h3><p>सौ. प्रिया व प्रा.डॉ.श्री. संजयराव तिरथकर</p>'],
 
   // 5.9 footer
-  ['aria-label="Illustration of Vrishali and Vedant holding hands"', 'aria-label="हात धरलेले वृषाली व वेदांत यांचे चित्र"'],
+  ['alt="Illustration of Vrishali and Vedant holding hands"', 'alt="हात धरलेले वृषाली व वेदांत यांचे चित्र"'],
   ['<p class="f-bo" data-reveal="fade">Blessings Only</p>', '<p class="f-bo" data-reveal="fade">आहेर पध्दत पुर्णतः बंद....आपली उपस्थिती व आशिर्वादच अमुल्य....</p>'],
   ['<span>Vrishali <span class="amp">&amp;</span> Vedant</span>', `<span>वृषाली <span class="amp">${S}</span> वेदांत</span>`],
   ['<p class="f-date" data-reveal="up">Friday · 1 January 2027 · 10:30 AM</p>', '<p class="f-date" data-reveal="up">शुक्रवार दि. ०१ जानेवारी २०२७ रोजी · सकाळी १० वा. ३० मि.</p>'],
