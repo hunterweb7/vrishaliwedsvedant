@@ -67,7 +67,8 @@ const MR = [
 
   // 5.3 invitation card
   ['<p class="eyebrow" data-reveal="fade">The Invitation</p>', '<p class="eyebrow" data-reveal="fade">निमंत्रण पत्रिका</p>'],
-  ['<span>Wedding Ceremony</span></span></h2>', '<span>॥ यांचा शुभविवाह ॥</span></span></h2>'],
+  // non-breaking spaces keep the ॥ marks attached to the words on narrow phones
+  ['<span>Wedding Ceremony</span></span></h2>', '<span>॥&nbsp;यांचा शुभविवाह&nbsp;॥</span></span></h2>'],
   ['<p class="sub" data-reveal="up" style="--d:.3s">Friday · 1 January 2027</p>', '<p class="sub" data-reveal="up" style="--d:.3s">शुक्रवार दि. ०१ जानेवारी २०२७ रोजी</p>', 'all'],
   ['<span class="arch-names">Vrishali<br>Vedant</span>', '<span class="arch-names">वृषाली<br>वेदांत</span>'],
   ['<p class="c-bless">II Shree Ganeshaya Namah II</p>', '<p class="c-bless">।। श्री गणेशाय नमः ।।</p>'],
@@ -127,9 +128,9 @@ const MR = [
   ['<svg aria-hidden="true"><use href="#i-pin"/></svg>Get Directions</a>', '<svg aria-hidden="true"><use href="#i-pin"/></svg>मार्ग पहा</a>'],
   ['<p class="dev" lang="mr">तिथी मार्गशीर्ष कृ. ९ शके १९४८ शुक्रवार दि. १ जानेवारी २०२७ सकाळी १०.३० वा.</p>', '<h4>* विवाह मुहूर्त *</h4><p class="dev" lang="mr">मिती मार्गशीर्ष कृ.९ शके १९४८<br>शुक्रवार दि. १जानेवारी २०२७<br>सकाळी १०.३० वा.</p>'],
   ['<p class="dev" lang="mr">सिल्वर स्टार सेलिब्रेशन हॉल, शेगाव-रहाटगाव रोड, अमरावती</p>', '<h4>* विवाहस्थळ *</h4><p class="dev" lang="mr">सिल्वर स्टार<br>सेलीब्रेशन हॉल<br>शेगाव-रहाटगांव रोड<br>अमरावती</p>'],
-  ['aria-label="Map illustration: Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati"', 'aria-label="नकाशा: सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती"'],
-  ['transform="rotate(9 120 118)">Shegaon-Rahatgaon Road</text>', 'transform="rotate(9 120 118)">शेगाव-रहाटगांव रोड</text>'],
-  ['<span class="map-label">Silver Star Celebration Hall</span>', '<span class="map-label">सिल्वर स्टार सेलीब्रेशन हॉल</span>'],
+  ['&amp;hl=en&amp;output=embed" title="Google Maps: Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati"', '&amp;hl=mr&amp;output=embed" title="Google नकाशा: सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती"'],
+  ['<span class="map-label">Silver Star Celebration Hall</span><span class="map-addr">Shegaon-Rahatgaon Road, Amravati</span>', '<span class="map-label">सिल्वर स्टार सेलीब्रेशन हॉल</span><span class="map-addr">शेगाव-रहाटगांव रोड, अमरावती</span>'],
+  ['<svg aria-hidden="true"><use href="#i-pin"/></svg>Open in Google Maps</a>', '<svg aria-hidden="true"><use href="#i-pin"/></svg>Google Maps मध्ये उघडा</a>'],
 
   // 5.7 events
   ['<p class="eyebrow" data-reveal="fade">Programme</p>', '<p class="eyebrow" data-reveal="fade">कार्यक्रम</p>'],
