@@ -18,7 +18,7 @@
  Venue name: Silver Star Celebration Hall
  Venue address: Shegaon-Rahatgaon Road, Amravati
  Marathi venue line: सिल्वर स्टार सेलिब्रेशन हॉल, शेगाव-रहाटगाव रोड, अमरावती
- Google Maps link: (blank, so every Get Directions button is hidden and the map card is not clickable)
+ Google Maps link: https://maps.app.goo.gl/hePZznCq4gRpgGm9A (shows the Directions buttons and makes the map card clickable)
  Dress code: skip
  Invitation wording:
    WE REQUEST YOUR GRACIOUS PRESENCE FOR THE WEDDING CEREMONY OF
@@ -37,7 +37,7 @@
  Wedding | 1 January 2027 | Friday | 10:30 AM | (venue blank) | (dress code blank)
 
  PHOTOS: photo1.jpg, photo2.jpg, photo3.jpg, photo4.jpg (relative, same folder)
- To add a Maps link later: set CONFIG.MAPS_URL in the script near the bottom.
+ To change the Maps link: edit CONFIG.MAPS_URL in the script near the bottom.
 ================================================================
 -->
 <meta charset="utf-8">
@@ -1245,7 +1245,7 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
 'use strict';
 /* ===== CONFIG (details exactly as given) ===== */
 const CONFIG = {
-  MAPS_URL: '',                                   // blank in the brief: directions buttons stay hidden
+  MAPS_URL: 'https://maps.app.goo.gl/hePZznCq4gRpgGm9A', // Silver Star Celebration Hall, Amravati (given by the couple)
   TARGET: Date.UTC(2027, 0, 1, 10, 30) - 5.5 * 3600 * 1000, // 1 January 2027, 10:30 AM IST (+05:30)
   ICS_NAME: 'Vrishali-Vedant-Wedding.ics'
 };
