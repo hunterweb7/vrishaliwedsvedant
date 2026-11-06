@@ -1,0 +1,24 @@
+# Working folders (tests, screenshots, automation scripts, notes)
+_incoming/
+_test/
+_tools/
+_notes.md
+
+# Card scans and Flow source images (not used by the site)
+reference/
+assets/ref/
+assets/flow/raw/
+assets/flow/*.png
+
+# Editor / tool settings
+.kiro/
+.vscode/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store

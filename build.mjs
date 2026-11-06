@@ -1,0 +1,228 @@
+// Build: node build.mjs
+// Source of truth is src/template.html (English). This writes:
+//   en/index.html  English page
+//   ma/index.html  Marathi page (text copied from the printed Marathi card; parents only)
+//   index.html     root: sends visitors to /en/ or /ma/ (remembers the toggle choice)
+// Every Marathi replacement must match, otherwise the build stops with an error.
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+
+const T = readFileSync(new URL("./src/template.html", import.meta.url), "utf8");
+const S = '<svg class="swas" aria-hidden="true"><use href="#swastika"/></svg>';
+
+// Assets live in the site root; pages live one folder down.
+const fixPaths = (h) =>
+  h.replace(/(src|href)="(photo\d\.jpg|assets\/)/g, '$1="../$2')
+   .replace(/url\((assets\/)/g, 'url(../$1')
+   .replace(/'(photo\d\.jpg)'/g, "'../$1'");
+
+/* ---------- MARATHI TEXT (copied from the printed Marathi card) ----------
+   Card front:  ॥शुभविवाह॥ · चि.सौ.कां. वृषाली 卐 चि. वेदांत · शुक्रवार दि. ०१ जानेवारी २०२७ रोजी · सकाळी १० वा. ३० मि. · सस्नेह निमंत्रण
+   Inside:      ।। श्री गणेशाय नमः ।। · स.न.वि.वि. आमचे येथे श्रीकृपेकरुन
+                चि.सौ.कां. वृषाली · सौ. अर्चना व श्री. सुभाषराव गुल्हाने · रा. सुरळी, जि. अमरावती, ह.मु. पुणे यांची कन्या
+                चि. वेदांत · सौ. प्रिया व प्रा.डॉ.श्री. संजयराव तिरथकर · रा. अमरावती यांचे चिरंजीव
+                ।। यांचा शुभविवाह ।।
+                * विवाह मुहूर्त * मिती मार्गशीर्ष कृ.९ शके १९४८ / शुक्रवार दि. १जानेवारी २०२७ / सकाळी १०.३० वा.
+                * विवाहस्थळ * सिल्वर स्टार / सेलीब्रेशन हॉल / शेगाव-रहाटगांव रोड / अमरावती
+                स्वरुची भोज लग्नानंतर लगेच
+                आहेर पध्दत पुर्णतः बंद....आपली उपस्थिती व आशिर्वादच अमुल्य....
+   Grandparent and relatives lines are left out on purpose (parents only).
+------------------------------------------------------------------------ */
+const MR = [
+  // document
+  ['<html lang="en">', '<html lang="mr">'],
+  ['<title>Vrishali &amp; Vedant · Wedding Invitation</title>', '<title>वृषाली 卐 वेदांत · शुभविवाह</title>'],
+  ['content="Wedding Invitation · Vrishali with Vedant · Friday, 1 January 2027, 10:30 AM · Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati"', 'content="शुभविवाह · चि.सौ.कां. वृषाली व चि. वेदांत · शुक्रवार दि. ०१ जानेवारी २०२७ रोजी सकाळी १० वा. ३० मि. · सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती"'],
+  ['<meta property="og:title" content="Vrishali &amp; Vedant · Wedding Invitation">', '<meta property="og:title" content="वृषाली 卐 वेदांत · शुभविवाह">'],
+  ['<meta property="og:description" content="Friday, 1 January 2027 · 10:30 AM · Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati">', '<meta property="og:description" content="शुक्रवार दि. ०१ जानेवारी २०२७ रोजी सकाळी १० वा. ३० मि. · सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती">'],
+
+  // 5.1 gate
+  ['aria-label="Wedding invitation of Vrishali and Vedant. Press Tap to Open."', 'aria-label="वृषाली व वेदांत यांचे शुभविवाह निमंत्रण. उघडण्यासाठी टॅप करा."'],
+  ['<div class="plaque-text"><span class="vv">V&amp;V</span><span class="mr">वृषाली   वेदांत</span></div>', `<div class="plaque-text"><span class="mr">वृषाली${S}वेदांत</span></div>`],
+  ['Opening the invitation…', 'निमंत्रण उघडत आहे…'],
+  ['<button class="btn" id="openBtn" type="button">Tap to Open</button>', '<button class="btn" id="openBtn" type="button">उघडण्यासाठी टॅप करा</button>'],
+
+  // 5.2 hero
+  ['aria-label="Vrishali with Vedant">', 'aria-label="वृषाली व वेदांत">'],
+  ['<p class="bless" data-h style="--d:.2s">II Shree Ganeshaya Namah II</p>', '<p class="bless" data-h style="--d:.2s">।। श्री गणेशाय नमः ।।</p>'],
+  ['<p class="bless-mr" data-h style="--d:.35s">।। श्री गणेशाय नमः ।।</p>', '<p class="bless-mr" data-h style="--d:.35s">स.न.वि.वि. आमचे येथे श्रीकृपेकरुन</p>'],
+  ['<h1 class="names" aria-label="Vrishali with Vedant">', '<h1 class="names" aria-label="चि.सौ.कां. वृषाली व चि. वेदांत">'],
+  ['<span class="nm n1" aria-hidden="true">Vrishali</span>', '<span class="nm n1" aria-hidden="true">वृषाली</span>'],
+  ['<span class="nm with" aria-hidden="true">with</span>', `<span class="nm with" aria-hidden="true">${S}</span>`],
+  ['<span class="nm n2" aria-hidden="true">Vedant</span>', '<span class="nm n2" aria-hidden="true">वेदांत</span>'],
+  ['<p class="names-mr" data-h style="--d:2.1s">वृषाली   वेदांत</p>', '<p class="names-mr" data-h style="--d:2.1s">सस्नेह निमंत्रण</p>'],
+  ['<p class="hero-sub" data-h style="--d:2.3s">Wedding Invitation</p>', '<p class="hero-sub" data-h style="--d:2.3s">॥ शुभविवाह ॥</p>'],
+  ['<p class="hero-date" data-h style="--d:2.5s"><span>Friday</span><i aria-hidden="true"></i><span>1 January 2027</span><i aria-hidden="true"></i><span>10:30 AM</span></p>', '<p class="hero-date" data-h style="--d:2.5s"><span>शुक्रवार दि. ०१ जानेवारी २०२७ रोजी</span><i aria-hidden="true"></i><span>सकाळी १० वा. ३० मि.</span></p>'],
+  ['<svg aria-hidden="true"><use href="#i-cal"/></svg>Save the Date</a>', '<svg aria-hidden="true"><use href="#i-cal"/></svg>दिनांक लक्षात ठेवा</a>'],
+  ['aria-label="Scroll to the invitation card"', 'aria-label="निमंत्रण पत्रिकेकडे जा"'],
+  ['alt="Vrishali and Vedant walking down the aisle, smiling at each other while soft white balls fall around them"', 'alt="वृषाली व वेदांत हसत एकमेकांकडे पाहत चालताना, भोवती पांढरे गोळे पडत आहेत"'],
+
+  // 5.3 invitation card
+  ['<p class="eyebrow" data-reveal="fade">The Invitation</p>', '<p class="eyebrow" data-reveal="fade">निमंत्रण पत्रिका</p>'],
+  ['<span>Wedding Ceremony</span></span></h2>', '<span>॥ यांचा शुभविवाह ॥</span></span></h2>'],
+  ['<p class="sub" data-reveal="up" style="--d:.3s">Friday · 1 January 2027</p>', '<p class="sub" data-reveal="up" style="--d:.3s">शुक्रवार दि. ०१ जानेवारी २०२७ रोजी</p>', 'all'],
+  ['<span class="arch-names">Vrishali<br>Vedant</span>', '<span class="arch-names">वृषाली<br>वेदांत</span>'],
+  ['<p class="c-bless">II Shree Ganeshaya Namah II</p>', '<p class="c-bless">।। श्री गणेशाय नमः ।।</p>'],
+  ['<p class="c-req">WE REQUEST YOUR GRACIOUS PRESENCE FOR THE WEDDING CEREMONY OF</p>', '<p class="c-req">स.न.वि.वि. आमचे येथे श्रीकृपेकरुन</p>'],
+  ['<p class="c-name">Vrishali</p>', '<p class="c-name">चि.सौ.कां. वृषाली</p>'],
+  ['<p class="c-par">(D/o. Mrs. Archana &amp; Mr. Subhash Gulhane)</p>', '<p class="c-par">सौ. अर्चना व श्री. सुभाषराव गुल्हाने<br>रा. सुरळी, जि. अमरावती, ह.मु. पुणे यांची कन्या</p>'],
+  ['<p class="c-with">with</p>', `<p class="c-with">${S}</p>`],
+  ['<p class="c-name">Vedant</p>', '<p class="c-name">चि. वेदांत</p>'],
+  ['<p class="c-par">(S/o Mrs. Priya &amp; Dr. Sanjay Tirathkar)</p>', '<p class="c-par">सौ. प्रिया व प्रा.डॉ.श्री. संजयराव तिरथकर<br>रा. अमरावती यांचे चिरंजीव</p>'],
+  ['<p class="c-bo">BLESSINGS ONLY</p>', '<p class="c-bo">।। यांचा शुभविवाह ।।</p>'],
+  ['<p class="b-title">Wedding Ceremony</p>', '<p class="b-title">विवाह मुहूर्त</p>'],
+  ['<span class="b-side">Friday</span>', '<span class="b-side">शुक्रवार</span>'],
+  ['<span class="b-main"><span>January</span><b>01</b><span>2027</span></span>', '<span class="b-main"><span>जानेवारी</span><b>१</b><span>२०२७</span></span>'],
+  ['<span class="b-side">10:30 AM</span>', '<span class="b-side">सकाळी १०.३० वा.</span>'],
+  ['<p class="b-vl">Venue</p>', '<p class="b-vl">विवाहस्थळ</p>'],
+  ['<p class="b-venue">Silver Star Celebration Hall</p>', '<p class="b-venue">सिल्वर स्टार सेलीब्रेशन हॉल</p>'],
+  ['<p class="b-addr">Shegaon-Rahatgaon Road, Amravati</p>', '<p class="b-addr">शेगाव-रहाटगांव रोड<br>अमरावती</p>'],
+  ['<p class="b-rl">With Regards:</p>', '<p class="b-rl">मिती मार्गशीर्ष कृ.९ शके १९४८</p>'],
+  ['<p class="b-reg">Sau. Archana &amp; Mr. Subhash Gulhane</p>', '<p class="b-reg">स्वरुची भोज लग्नानंतर लगेच</p>'],
+  ['<p class="b-reg2">Surali, Tal. Warud, Dist. Amravati</p>', '<p class="b-reg2">सस्नेह निमंत्रण</p>'],
+  ['<span id="turnTxt">Tap to turn</span>', '<span id="turnTxt">पत्रिका उलटा</span>'],
+
+  // 5.4 couple
+  ['<p class="eyebrow" data-reveal="fade">The Couple</p>', '<p class="eyebrow" data-reveal="fade">वधू-वर</p>'],
+  ['<span>Bride &amp; Groom</span></span></h2>', '<span>वधू व वर</span></span></h2>'],
+  ['<p class="sub" data-reveal="up" style="--d:.3s">Vrishali with Vedant</p>', `<p class="sub" data-reveal="up" style="--d:.3s">वृषाली${S}वेदांत</p>`],
+  ['aria-label="Illustrated portrait of Vrishali"', 'aria-label="वृषालीचे चित्र"'],
+  ['aria-label="Illustrated portrait of Vedant"', 'aria-label="वेदांतचे चित्र"'],
+  ['<p class="eyebrow p-label">Bride</p>', '<p class="eyebrow p-label">वधू</p>'],
+  ['<h3 class="p-name">Vrishali</h3>', '<h3 class="p-name">वृषाली</h3>'],
+  ['<p class="p-par">D/o. Mrs. Archana &amp; Mr. Subhash Gulhane</p>', '<p class="p-par">सौ. अर्चना व श्री. सुभाषराव गुल्हाने<br>रा. सुरळी, जि. अमरावती, ह.मु. पुणे यांची कन्या</p>'],
+  ['<p class="eyebrow p-label">Groom</p>', '<p class="eyebrow p-label">वर</p>'],
+  ['<h3 class="p-name">Vedant</h3>', '<h3 class="p-name">वेदांत</h3>'],
+  ['<p class="p-par">S/o Mrs. Priya &amp; Dr. Sanjay Tirathkar</p>', '<p class="p-par">सौ. प्रिया व प्रा.डॉ.श्री. संजयराव तिरथकर<br>रा. अमरावती यांचे चिरंजीव</p>'],
+
+  // marquee
+  ["html += '<span class=\"mq-item\">Shubh Vivah<svg", "html += '<span class=\"mq-item\">शुभविवाह<svg"],
+
+  // 5.5 countdown
+  ['<p class="eyebrow" data-reveal="fade">Save the Date</p>', '<p class="eyebrow" data-reveal="fade">विवाह मुहूर्त</p>'],
+  ['<span>Counting Down</span></span></h2>', '<span>उलटी गणती</span></span></h2>'],
+  ['<span class="cd-lab">Days</span>', '<span class="cd-lab">दिवस</span>'],
+  ['<span class="cd-lab">Hours</span>', '<span class="cd-lab">तास</span>'],
+  ['<span class="cd-lab">Minutes</span>', '<span class="cd-lab">मिनिटे</span>'],
+  ['<span class="cd-lab">Seconds</span>', '<span class="cd-lab">सेकंद</span>'],
+  ['<p class="cd-done" id="cdDone" hidden>Just Married</p>', '<p class="cd-done" id="cdDone" hidden>शुभविवाह संपन्न</p>'],
+  ['<p class="cd-sub" data-reveal="up" style="--d:.4s">1 January 2027 · 10:30 AM IST</p>', '<p class="cd-sub" data-reveal="up" style="--d:.4s">शुक्रवार दि. १जानेवारी २०२७ · सकाळी १०.३० वा.</p>'],
+
+  // 5.6 venue
+  ['<p class="eyebrow" data-reveal="fade">Where to Find Us</p>', '<p class="eyebrow" data-reveal="fade">पत्ता</p>'],
+  ['<span>Venue Details</span></span></h2>', '<span>विवाहस्थळ</span></span></h2>'],
+  ['<p class="sub" data-reveal="up" style="--d:.3s">Silver Star Celebration Hall</p>', '<p class="sub" data-reveal="up" style="--d:.3s">सिल्वर स्टार सेलीब्रेशन हॉल</p>'],
+  ['<p class="v-lab">Date</p><p class="v-val">1 January 2027</p><p class="v-small">Friday</p>', '<p class="v-lab">दिनांक</p><p class="v-val">१जानेवारी २०२७</p><p class="v-small">शुक्रवार</p>'],
+  ['<p class="v-lab">Time</p><p class="v-val">10:30 AM</p><p class="v-small">IST</p>', '<p class="v-lab">वेळ</p><p class="v-val">सकाळी १०.३० वा.</p><p class="v-small">भारतीय वेळ</p>'],
+  ['<p class="v-lab">Venue</p><p class="v-val">Silver Star Celebration Hall</p><p class="v-small">Shegaon-Rahatgaon Road, Amravati</p>', '<p class="v-lab">विवाहस्थळ</p><p class="v-val">सिल्वर स्टार सेलीब्रेशन हॉल</p><p class="v-small">शेगाव-रहाटगांव रोड, अमरावती</p>'],
+  ['<svg aria-hidden="true"><use href="#i-cal"/></svg>Add to Calendar</button>', '<svg aria-hidden="true"><use href="#i-cal"/></svg>कॅलेंडरमध्ये जोडा</button>'],
+  ['<svg aria-hidden="true"><use href="#i-pin"/></svg>Get Directions</a>', '<svg aria-hidden="true"><use href="#i-pin"/></svg>मार्ग पहा</a>'],
+  ['<p class="dev" lang="mr">तिथी मार्गशीर्ष कृ. ९ शके १९४८ शुक्रवार दि. १ जानेवारी २०२७ सकाळी १०.३० वा.</p>', '<h4>* विवाह मुहूर्त *</h4><p class="dev" lang="mr">मिती मार्गशीर्ष कृ.९ शके १९४८<br>शुक्रवार दि. १जानेवारी २०२७<br>सकाळी १०.३० वा.</p>'],
+  ['<p class="dev" lang="mr">सिल्वर स्टार सेलिब्रेशन हॉल, शेगाव-रहाटगाव रोड, अमरावती</p>', '<h4>* विवाहस्थळ *</h4><p class="dev" lang="mr">सिल्वर स्टार<br>सेलीब्रेशन हॉल<br>शेगाव-रहाटगांव रोड<br>अमरावती</p>'],
+  ['aria-label="Map illustration: Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati"', 'aria-label="नकाशा: सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती"'],
+  ['transform="rotate(9 120 118)">Shegaon-Rahatgaon Road</text>', 'transform="rotate(9 120 118)">शेगाव-रहाटगांव रोड</text>'],
+  ['<span class="map-label">Silver Star Celebration Hall</span>', '<span class="map-label">सिल्वर स्टार सेलीब्रेशन हॉल</span>'],
+
+  // 5.7 events
+  ['<p class="eyebrow" data-reveal="fade">Programme</p>', '<p class="eyebrow" data-reveal="fade">कार्यक्रम</p>'],
+  ['<span>Wedding Events</span></span></h2>', '<span>विवाह सोहळा</span></span></h2>'],
+  ['<h3 class="tl-fn" style="margin:0;font-weight:400">Wedding</h3>', '<h3 class="tl-fn" style="margin:0;font-weight:400">शुभविवाह</h3>'],
+  ['<p class="tl-meta"><span>1 January 2027</span><i aria-hidden="true"></i><span>Friday</span><i aria-hidden="true"></i><span>10:30 AM</span></p>', '<p class="tl-meta"><span>शुक्रवार दि. १जानेवारी २०२७</span><i aria-hidden="true"></i><span>सकाळी १०.३० वा.</span></p>'],
+  ['<p class="tl-venue">Silver Star Celebration Hall<br>Shegaon-Rahatgaon Road, Amravati</p>', '<p class="tl-venue">सिल्वर स्टार सेलीब्रेशन हॉल<br>शेगाव-रहाटगांव रोड, अमरावती</p>'],
+  ['<svg aria-hidden="true"><use href="#i-pin"/></svg>Directions</a>', '<svg aria-hidden="true"><use href="#i-pin"/></svg>मार्ग पहा</a>'],
+
+  // 5.16 saptapadi
+  ['<p class="eyebrow" data-reveal="fade">Seven Steps</p>', '<p class="eyebrow" data-reveal="fade">सात पावले</p>'],
+  ['<h2 class="sapta-title" id="spTitle" data-reveal="scale">Saptapadi</h2>', '<h2 class="sapta-title" id="spTitle" data-reveal="scale">सप्तपदी</h2>'],
+  ['aria-label="Seven pairs of gold footprints along a curve, numbered 1 to 7, ending at a kalash with a lit diya"', 'aria-label="सात सोनेरी पावलांच्या जोड्या, १ ते ७ क्रमांक, शेवटी कलश व दिवा"'],
+
+  // 5.8 album
+  ['<p class="eyebrow" data-reveal="fade">Our Moments</p>', '<p class="eyebrow" data-reveal="fade">आठवणी</p>'],
+  ['<span>Photo Album</span></span></h2>', '<span>छायाचित्रे</span></span></h2>'],
+  ['<p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>', '<p class="sub" data-reveal="up" style="--d:.3s">मोठे पाहण्यासाठी फोटोवर टॅप करा</p>'],
+  ['aria-label="Open photo 1 of 4"', 'aria-label="फोटो १ (४ पैकी) उघडा"'],
+  ['aria-label="Open photo 2 of 4"', 'aria-label="फोटो २ (४ पैकी) उघडा"'],
+  ['aria-label="Open photo 3 of 4"', 'aria-label="फोटो ३ (४ पैकी) उघडा"'],
+  ['aria-label="Open photo 4 of 4"', 'aria-label="फोटो ४ (४ पैकी) उघडा"'],
+  ['alt="Vrishali and Vedant standing side by side, she in a pink saree and he in a paisley vest"', 'alt="वृषाली व वेदांत शेजारी उभे, गुलाबी साडी व पैस्ली जाकीट"'],
+  ['alt="Vrishali and Vedant smiling, his arm around her, in a pink saree and paisley vest"', 'alt="वृषाली व वेदांत हसताना, गुलाबी साडी व पैस्ली जाकीट"'],
+  ['alt="Vrishali in a champagne lehenga and Vedant in a plum bandhgala, standing before a curtain"', 'alt="शॅम्पेन लेहेंग्यात वृषाली व जांभळ्या बंदगळ्यात वेदांत"'],
+  ['alt="Vrishali and Vedant walking down the aisle as soft white balls fall around them"', 'alt="वृषाली व वेदांत चालताना, भोवती पांढरे गोळे पडत आहेत"'],
+
+  // 5.17 families
+  ['<p class="eyebrow" data-reveal="fade">Families</p>', '<p class="eyebrow" data-reveal="fade">कुटुंबीय</p>'],
+  ['<span>With Blessings From</span></span></h2>', '<span>शुभाशीर्वाद</span></span></h2>'],
+  ["<h3>Bride's Family</h3><p>Mrs. Archana &amp; Mr. Subhash Gulhane</p>", '<h3>वधूचे आई-वडील</h3><p>सौ. अर्चना व श्री. सुभाषराव गुल्हाने</p>'],
+  ["<h3>Groom's Family</h3><p>Mrs. Priya &amp; Dr. Sanjay Tirathkar</p>", '<h3>वराचे आई-वडील</h3><p>सौ. प्रिया व प्रा.डॉ.श्री. संजयराव तिरथकर</p>'],
+
+  // 5.9 footer
+  ['aria-label="Illustration of Vrishali and Vedant holding hands"', 'aria-label="हात धरलेले वृषाली व वेदांत यांचे चित्र"'],
+  ['<p class="f-bo" data-reveal="fade">Blessings Only</p>', '<p class="f-bo" data-reveal="fade">आहेर पध्दत पुर्णतः बंद....आपली उपस्थिती व आशिर्वादच अमुल्य....</p>'],
+  ['<span>Vrishali <span class="amp">&amp;</span> Vedant</span>', `<span>वृषाली <span class="amp">${S}</span> वेदांत</span>`],
+  ['<p class="f-date" data-reveal="up">Friday · 1 January 2027 · 10:30 AM</p>', '<p class="f-date" data-reveal="up">शुक्रवार दि. ०१ जानेवारी २०२७ रोजी · सकाळी १० वा. ३० मि.</p>'],
+  ['<p class="f-venue" data-reveal="up" style="--d:.1s">Silver Star Celebration Hall<br>Shegaon-Rahatgaon Road, Amravati</p>', '<p class="f-venue" data-reveal="up" style="--d:.1s">सिल्वर स्टार सेलीब्रेशन हॉल<br>शेगाव-रहाटगांव रोड, अमरावती</p>'],
+  ['<p class="f-reg" data-reveal="up" style="--d:.2s">With Regards: Sau. Archana &amp; Mr. Subhash Gulhane, Surali, Tal. Warud, Dist. Amravati</p>', '<p class="f-reg" data-reveal="up" style="--d:.2s">सस्नेह निमंत्रण<br>सौ. अर्चना व श्री. सुभाषराव गुल्हाने<br>रा. सुरळी, जि. अमरावती, ह.मु. पुणे</p>'],
+  ['https://wa.me/917709806289?text=Hi%2C%20I%20will%20attend%20the%20wedding%20of%20Vrishali%20and%20Vedant.', 'https://wa.me/917709806289?text=' + encodeURIComponent('नमस्कार, मी वृषाली व वेदांत यांच्या शुभविवाहाला उपस्थित राहीन.')],
+  ['<svg aria-hidden="true"><use href="#i-chat"/></svg>RSVP on WhatsApp</a>', '<svg aria-hidden="true"><use href="#i-chat"/></svg>व्हॉट्सॲपवर कळवा</a>'],
+  ['<svg aria-hidden="true"><use href="#i-lantern"/></svg>Release a Wish Lantern</button>', '<svg aria-hidden="true"><use href="#i-lantern"/></svg>शुभेच्छा आकाशकंदील सोडा</button>'],
+  ['<p class="f-rsvp" data-reveal="fade">RSVP: 7709806289 (Mr. Subhash Gulhane)</p>', '<p class="f-rsvp" data-reveal="fade">संपर्क: 7709806289 (श्री. सुभाषराव गुल्हाने)</p>'],
+  ['<p class="f-close" data-reveal="scale">Vrishali with Vedant</p>', `<p class="f-close" data-reveal="scale">वृषाली${S}वेदांत</p>`],
+
+  // lightbox + calendar
+  ['aria-label="Photo viewer"', 'aria-label="फोटो दर्शक"'],
+  ['aria-label="Close photo viewer"', 'aria-label="फोटो दर्शक बंद करा"'],
+  ['aria-label="Previous photo"', 'aria-label="मागील फोटो"'],
+  ['aria-label="Next photo"', 'aria-label="पुढील फोटो"'],
+  ["'SUMMARY:' + icsEscape('Wedding · Vrishali & Vedant')", "'SUMMARY:' + icsEscape('शुभविवाह · वृषाली व वेदांत')"],
+  ["'LOCATION:' + icsEscape('Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati')", "'LOCATION:' + icsEscape('सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती (Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati)')"],
+  ["const desc = 'Blessings Only'", "const desc = 'आहेर पध्दत पुर्णतः बंद....आपली उपस्थिती व आशिर्वादच अमुल्य....'"],
+];
+
+function applyAll(html, pairs) {
+  const misses = [];
+  for (const [from, to, mode] of pairs) {
+    const n = html.split(from).length - 1;
+    if (n === 0) { misses.push(from.slice(0, 110)); continue; }
+    html = mode === "all" ? html.split(from).join(to) : html.replace(from, () => to);
+  }
+  if (misses.length) {
+    console.error("MISSING " + misses.length + " Marathi replacement(s):\n  " + misses.join("\n  "));
+    process.exit(1);
+  }
+  return html;
+}
+
+const en = fixPaths(T);
+const mr = fixPaths(applyAll(T, MR));
+
+// The English page must still contain every English line exactly as typed.
+for (const must of ["Vrishali", "Vedant", "(D/o. Mrs. Archana &amp; Mr. Subhash Gulhane)", "(S/o Mrs. Priya &amp; Dr. Sanjay Tirathkar)", "Silver Star Celebration Hall", "Shegaon-Rahatgaon Road, Amravati", "10:30 AM", "1 January 2027", "With Regards: Sau. Archana &amp; Mr. Subhash Gulhane, Surali, Tal. Warud, Dist. Amravati", "917709806289"]) {
+  if (!en.includes(must)) { console.error("English check failed:", must); process.exit(1); }
+}
+
+mkdirSync(new URL("./en/", import.meta.url), { recursive: true });
+mkdirSync(new URL("./ma/", import.meta.url), { recursive: true });
+writeFileSync(new URL("./en/index.html", import.meta.url), en);
+writeFileSync(new URL("./ma/index.html", import.meta.url), mr);
+
+// Root page: remembers the last language chosen with the toggle, else browser language, else English.
+writeFileSync(new URL("./index.html", import.meta.url), `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vrishali &amp; Vedant · Wedding Invitation · वृषाली 卐 वेदांत</title>
+<meta name="theme-color" content="#5C2330">
+<script>
+  (function () {
+    var l = null;
+    try { l = localStorage.getItem('vv-lang'); } catch (e) {}
+    if (!l) l = /^mr\\b/i.test(navigator.language || '') ? 'mr' : 'en';
+    location.replace(l === 'mr' ? 'ma/' + (location.protocol === 'file:' ? 'index.html' : '') : 'en/' + (location.protocol === 'file:' ? 'index.html' : ''));
+  })();
+</script>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#5C2330;font-family:Georgia,serif}a{color:#E8D3A0;font-size:20px;margin:0 16px}</style>
+</head>
+<body><p><a href="en/index.html">English</a> <a href="ma/index.html" lang="mr">मराठी</a></p></body>
+</html>
+`);
+console.log("built en/index.html (" + en.length + " chars), ma/index.html (" + mr.length + " chars), index.html");
