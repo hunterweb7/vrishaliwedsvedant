@@ -150,6 +150,7 @@ const MR = [
   ['<p class="eyebrow" data-reveal="fade">Our Moments</p>', '<p class="eyebrow" data-reveal="fade">आठवणी</p>'],
   ['<span>Photo Album</span></span></h2>', '<span>छायाचित्रे</span></span></h2>'],
   ['<p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>', '<p class="sub" data-reveal="up" style="--d:.3s">मोठे पाहण्यासाठी फोटोवर टॅप करा</p>'],
+  ['aria-label="Photographs"', 'aria-label="छायाचित्रे"'],
   // album tiles (aria-labels and alt text) are written by galleryHtml() below
 
   // 5.17 families
@@ -202,13 +203,21 @@ const GALLERY_MARK = "<!--GALLERY-->";
 if (T.split(GALLERY_MARK).length !== 2) { console.error("template needs exactly one " + GALLERY_MARK); process.exit(1); }
 const dev = (n) => String(n).replace(/\d/g, (d) => "०१२३४५६७८९"[d]);
 const attr = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-const galleryHtml = (lang) => GALLERY.map((p, i) => {
-  const label = lang === "mr" ? `फोटो ${dev(i + 1)} (${dev(GALLERY.length)} पैकी) उघडा` : `Open photo ${i + 1} of ${GALLERY.length}`;
-  const alt = lang === "mr" ? p.mr : p.en;
-  const shape = i % 4 === 0 || i % 4 === 3 ? "" : " pill";   // arch, pill, pill, arch ... reads as a pattern in both the 2- and 4-column grids
-  const d = ((i % 4) * 0.1).toFixed(1);
-  return `      <li class="g-item" data-reveal="clip"${i % 4 ? ` style="--d:${d}s"` : ""}><div class="g-tilt" data-tilt><button class="g-btn${shape}" type="button" data-i="${i}" data-full="../assets/photos/${p.id}.webp" aria-label="${attr(label)}"><img src="../assets/photos/${p.id}t.webp" width="560" height="840" loading="lazy" decoding="async" alt="${attr(alt)}"></button></div></li>`;
-}).join("\n");
+/* Two rows. Row "a" slides right-to-left, row "b" left-to-right. Each row's list is written twice (the second copy is
+   hidden from screen readers and the tab key) so the CSS loop has no seam. data-i = position in the viewer's playlist. */
+const galleryHtml = (lang) => {
+  const tile = (p, i, j, dup) => {
+    const label = lang === "mr" ? `फोटो ${dev(i + 1)} (${dev(GALLERY.length)} पैकी) उघडा` : `Open photo ${i + 1} of ${GALLERY.length}`;
+    const alt = dup ? "" : lang === "mr" ? p.mr : p.en;
+    const shape = j % 2 ? " pill" : "";   // arch, pill, arch, pill ...
+    return `<li><button class="g-btn${shape}" type="button" data-i="${i}" data-full="../assets/photos/${p.id}.webp"${dup ? ' tabindex="-1"' : ""} aria-label="${attr(label)}"><img src="../assets/photos/${p.id}t.webp" width="560" height="840" loading="lazy" decoding="async" alt="${attr(alt)}"></button></li>`;
+  };
+  return ["a", "b"].map((row) => {
+    const items = GALLERY.map((p, i) => [p, i]).filter(([p]) => p.row === row);
+    const list = (dup) => `<ul class="reel-grp${dup ? " dup" : ""}"${dup ? ' aria-hidden="true"' : ""}>${items.map(([p, i], j) => tile(p, i, j, dup)).join("")}</ul>`;
+    return `    <div class="reel-view"><div class="reel-row ${row}">${list(false)}${list(true)}</div></div>`;
+  }).join("\n");
+};
 
 const en = fixPaths(T).replace(GALLERY_MARK, () => galleryHtml("en"));
 const mr = fixPaths(applyAll(T, MR)).replace(GALLERY_MARK, () => galleryHtml("mr"));

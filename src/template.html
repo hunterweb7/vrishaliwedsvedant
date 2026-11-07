@@ -461,13 +461,25 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 
 /* ===== 5.8 ALBUM ===== */
 .album{background-color:#D3D8CB}
-.gallery{list-style:none;margin:0 auto;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1040px}
-.g-item:nth-child(even){margin-top:44px}
-.g-tilt{transition:transform .6s var(--ease);transform-style:preserve-3d}
+/* two photo reels: the top row drifts right-to-left, the bottom row left-to-right.
+   Each list is written twice and the row slides by exactly one list (-50%), so the loop has no seam. */
+.reel{position:relative;z-index:2;margin:0 -20px;display:grid;gap:clamp(6px,1.6vw,16px);--tw:clamp(150px,40vw,240px);--gap:clamp(12px,2vw,20px)}
+.reel-view{overflow:hidden;padding:10px 0 20px}
+.reel-row{display:flex;width:max-content;animation:reelL var(--dur,84s) linear infinite;will-change:transform}
+.reel-row.b{--dur:96s;animation-name:reelR}
+.reel-grp{display:flex;gap:var(--gap);padding:0 var(--gap) 0 0;margin:0;list-style:none}
+.reel-grp>li{flex:none;width:var(--tw)}
+@keyframes reelL{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@keyframes reelR{from{transform:translate3d(-50%,0,0)}to{transform:translate3d(0,0,0)}}
+@media (hover:hover){.reel-view:hover .reel-row{animation-play-state:paused}}
+.reel-view:focus-within .reel-row,.reel.hold .reel-row,html.locked .reel-row{animation-play-state:paused}
+@media (min-width:900px){.reel-row{--dur:112s}.reel-row.b{--dur:126s}}
 .g-btn{position:relative;display:block;width:100%;padding:0;border:0;background:var(--sage-d);cursor:zoom-in;aspect-ratio:2/3;overflow:hidden;border-radius:999px 999px 18px 18px;box-shadow:var(--shadow);-webkit-tap-highlight-color:transparent}
 .g-btn.pill{border-radius:999px}
 .g-btn::after{content:"";position:absolute;inset:6px;border-radius:inherit;border:1px solid rgba(232,211,160,.95);box-shadow:0 0 0 1px rgba(156,122,60,.45);pointer-events:none}
-.g-btn img{position:absolute;left:0;top:-8%;width:100%;height:116%;object-fit:cover}
+.g-btn img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.g-btn{transition:transform .5s var(--ease)}
+@media (hover:hover){.g-btn:hover{transform:translateY(-6px)}}
 .lb{position:fixed;inset:0;z-index:95;display:grid;place-items:center}
 .lb[hidden]{display:none}
 .lb-bg{position:absolute;inset:0;background:rgba(43,13,19,.94);opacity:0;transition:opacity .45s}
@@ -480,7 +492,6 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .lb-close{top:calc(14px + env(safe-area-inset-top));right:14px}
 .lb-prev{left:10px;top:50%;margin-top:-24px} .lb-next{right:10px;top:50%;margin-top:-24px}
 .lb-count{position:absolute;z-index:2;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);font-family:var(--f-display);font-size:15px;letter-spacing:.14em;color:var(--gold-l);opacity:0;transition:opacity .4s}
-@media (min-width:900px){.gallery{grid-template-columns:repeat(4,1fr);gap:24px} .g-item:nth-child(even){margin-top:64px}}
 
 /* ===== 5.17 FAMILIES ===== */
 .fam-grid{display:grid;gap:24px;max-width:900px;margin:0 auto}
@@ -624,6 +635,11 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
   .draw{stroke-dashoffset:0!important}
   .divider .lotus-c,.tl-marker,.sp-step{opacity:1!important;transform:none!important}
   #fx,#glow,#flight{display:none!important}
+  /* photo reels stand still: swipe each row by hand instead */
+  .reel-view{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .reel-row{width:auto;transform:none!important}
+  .reel-grp{padding-left:20px}
+  .reel-grp.dup{display:none}
 }
 </style>
 </head>
@@ -1015,9 +1031,9 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
       <h2 class="title" id="albumTitle"><span class="mask" data-reveal-mask><span>Photo Album</span></span></h2>
       <p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>
     </header>
-    <ul class="gallery" id="gallery">
+  </div>
+  <div class="reel" id="gallery" data-reveal="up" role="group" aria-label="Photographs">
 <!--GALLERY-->
-    </ul>
   </div>
 </section>
 
@@ -1672,17 +1688,21 @@ tickers.push(() => {
   spSteps.forEach((s, i) => s.forEach(e => e.classList.toggle('on', i < n)));
 });
 
-/* ===== 5.8 ALBUM: inner parallax + lightbox ===== */
-const tiles = $$('.g-btn').map(b => ({ b, img: $('img', b), base: 0, h: 1, last: '' }));
-function measureTiles() { tiles.forEach(t => { t.img.style.transform = ''; const r = t.b.getBoundingClientRect(); t.base = r.top + window.scrollY + r.height / 2; t.h = r.height; }); }
-if (!RM) tickers.push(() => {
-  for (const t of tiles) {
-    const delta = (S.ly + S.vh / 2 - t.base) / (S.vh / 2 + t.h / 2);
-    if (Math.abs(delta) > 1.3) { if (t.last) { t.img.style.transform = ''; t.last = ''; } continue; }   // off screen: drop the layer (35 tiles)
-    const v = `translate3d(0,${(-clamp(delta, -1, 1) * .06 * t.h).toFixed(1)}px,0)`;
-    if (v !== t.last) { t.img.style.transform = v; t.last = v; }
-  }
-});
+/* ===== 5.8 ALBUM: two sliding photo reels + lightbox =====
+   Every photo is in the page twice (the second list makes the loop seamless). Only the first list is the
+   viewer's playlist; a tap on either copy opens the same photo (data-i). */
+const tiles = $$('.reel-grp:not(.dup) .g-btn').map(b => ({ b, img: $('img', b) }));
+const reel = $('#gallery');
+if (reel) {   // touch: a finger on the reels freezes them; they glide on again shortly after it lifts
+  let holdT = 0;
+  reel.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; clearTimeout(holdT); reel.classList.add('hold'); });
+  const letGo = () => { clearTimeout(holdT); holdT = setTimeout(() => reel.classList.remove('hold'), 1500); };
+  reel.addEventListener('pointerup', letGo); reel.addEventListener('pointercancel', letGo);
+}
+/* the copy of photo i that is on screen right now (the reels move, so the tile that was tapped may be gone) */
+function thumbFor(i) {
+  return $$('.g-btn[data-i="' + i + '"]').find(b => { const r = b.getBoundingClientRect(); return r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight; }) || null;
+}
 const lb = $('#lb'), lbImg = $('#lbImg'), lbCount = $('#lbCount');
 const photos = tiles.map(t => ({ src: t.b.dataset.full || t.img.getAttribute('src'), alt: t.img.getAttribute('alt') }));
 const lbWarm = i => { const p = photos[(i + photos.length) % photos.length]; if (p) new Image().src = p.src; };   // fetch the neighbours so swiping feels instant
@@ -1711,10 +1731,11 @@ function lbOpenAt(i, btn) {
 }
 function lbClose() {
   if (!lbOpen) return; lbOpen = false; lb.classList.remove('open');
-  const thumb = tiles[lbCur].b;
-  zoomRect(thumb, true, () => { lb.hidden = true; root.classList.remove('locked'); if (lbLast) lbLast.focus({ preventScroll: true }); });
+  const thumb = thumbFor(lbCur);
+  const done = () => { lb.hidden = true; root.classList.remove('locked'); if (lbLast && lbLast.offsetParent) lbLast.focus({ preventScroll: true }); };
+  if (thumb) zoomRect(thumb, true, done); else done();
 }
-tiles.forEach((t, i) => t.b.addEventListener('click', () => lbOpenAt(i, t.b)));
+$$('.g-btn').forEach(b => b.addEventListener('click', () => lbOpenAt(+b.dataset.i, b)));
 $('#lbClose').addEventListener('click', lbClose);
 $('#lbBg').addEventListener('click', lbClose);
 $('#lbPrev').addEventListener('click', () => lbShow(lbCur - 1, -1));
@@ -1850,7 +1871,6 @@ function measureAll() {
   S.vh = innerHeight; S.vw = innerWidth;
   measureHero();
   measurePar();
-  measureTiles();
   tlTop = docTop(tlWrap); tlH = Math.max(1, tlWrap.offsetHeight);
   spTop = docTop(spSec); spH = Math.max(1, spSec.offsetHeight);
   const cdSec = $('#countdown'); FX.setBand(docTop(cdSec), cdSec.offsetHeight);
