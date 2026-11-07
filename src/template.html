@@ -64,7 +64,6 @@
   --f-dev:"Yatra One","Noto Serif Devanagari",serif; --f-devb:"Noto Serif Devanagari",serif;
   --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:40px; --s6:48px; --s8:64px; --s10:80px;
   --sec:clamp(88px,12vw,160px); --maxw:1120px;
-  --marble:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='1600'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.0028 0.0075' numOctaves='4' seed='7'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 0.98  0 0 0 -2.1 1.25'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>");
   --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42  0 0 0 0 0.18  0 0 0 0 0.18  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -88,7 +87,8 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .bg-cream{background-color:var(--cream);background-image:var(--grain),radial-gradient(ellipse at 50% 50%,rgba(251,243,228,.9),transparent 70%)}
 .bg-blush{background-color:var(--blush);background-image:var(--grain),radial-gradient(ellipse at 20% 20%,rgba(251,243,228,.7),transparent 60%),radial-gradient(ellipse at 90% 90%,rgba(217,181,171,.55),transparent 60%)}
 .bg-burg{background-color:var(--burg);background-image:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(122,52,66,.75),transparent 70%),radial-gradient(ellipse 80% 60% at 50% 100%,rgba(69,23,31,.95),transparent 70%);color:var(--gold-l)}
-.marble{position:absolute;inset:-25% 0;background-image:var(--marble);background-size:cover;background-repeat:no-repeat;background-position:center;opacity:.75;pointer-events:none;z-index:0}
+/* marble clouds: pre-rendered (was a live SVG feTurbulence filter, slow to rasterise on phones; tools: _tools/make-marble.mjs) */
+.marble{position:absolute;inset:-25% 0;background-image:url(assets/flow/marble.webp);background-size:cover;background-repeat:no-repeat;background-position:center;opacity:.75;pointer-events:none;z-index:0}
 
 /* ===== LAYOUT ===== */
 .sec{position:relative;padding:var(--sec) 20px;overflow:clip;isolation:isolate}
@@ -97,6 +97,8 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .decor svg{display:block;width:100%;height:auto;overflow:visible}
 .watermark{left:50%;top:50%;width:min(130vw,980px);aspect-ratio:1;margin:calc(min(130vw,980px)/-2) 0 0 calc(min(130vw,980px)/-2);opacity:.13}
 .watermark img{width:100%;height:100%;object-fit:contain;animation:spin 240s linear infinite}
+/* phones: the 1.5deg/s mandala spin is barely visible, so skip the always-running compositor animations */
+@media (hover:none){.watermark img{animation:none}}
 /* hanging gold vines (Flow): tiled along the top edge, swaying from the top */
 .vines{left:0;right:0;top:0;height:clamp(96px,15vw,240px);z-index:1}
 .vines>i{position:absolute;inset:0;background-repeat:repeat-x;background-size:auto 100%;background-position:50% 0;transform-origin:50% 0;animation:vineSway 9s ease-in-out infinite}
@@ -162,8 +164,8 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .door.r .door-scene{left:calc((100% - max(100%,55.8vh)) * .36);transform:scaleX(-1)}
 .door-bg{position:absolute;inset:0;width:100%;height:100%;display:block}
 /* elephant stands on the terrace facing the seam; sized to the panel so it never crosses into the other door */
-.door>.ele{position:absolute;bottom:2.5%;right:4%;width:min(112%,360px,36vh)}/* 36vh: phones held sideways */
-.door.r>.ele{right:auto;left:4%;transform:scaleX(-1)}
+.door>.ele{position:absolute;bottom:2.5%;right:3%;width:min(94%,360px,36vh)}/* 94%: the whole elephant, tail included, stays inside its door */
+.door.r>.ele{right:auto;left:3%;transform:scaleX(-1)}
 @media (min-aspect-ratio:1/1){
   .door-scene,.door.r .door-scene{width:min(100%,64vh);-webkit-mask-image:linear-gradient(90deg,transparent,#000 16%);mask-image:linear-gradient(90deg,transparent,#000 16%)}
   .door.l .door-scene{left:auto;right:0}
@@ -191,6 +193,17 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .gate-loading{font-family:var(--f-label);font-size:16px;letter-spacing:.06em;color:var(--gold-l);transition:opacity .5s}
 #openBtn{color:var(--ivory);background:linear-gradient(135deg,rgba(110,43,58,.95),rgba(69,23,31,.95)) padding-box,linear-gradient(120deg,var(--gold-d),var(--gold-l) 40%,var(--gold) 60%,var(--gold-d)) border-box;opacity:0;transform:translateY(8px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
 #gate.ready #openBtn{opacity:1;transform:none}
+#openBtn{white-space:nowrap}
+@media (max-width:340px){#openBtn{padding:12px 20px;letter-spacing:.1em}}
+/* phones held sideways: the plaque and the button sit above the elephants instead of on their heads */
+@media (max-height:520px) and (min-aspect-ratio:1/1){
+  .gate-center{top:36%;gap:8px}
+  .plaque{width:32vh}
+  .plaque .vv{font-size:min(30px,7vh)}
+  .plaque .mr{font-size:12px;margin-top:2px}
+  .gate-cta{min-height:48px}
+  .door>.ele{width:min(94%,28vh)}
+}
 #gate.ready .gate-loading{opacity:0;position:absolute}
 .gate-light{position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,rgba(255,250,236,1),rgba(246,235,203,.7) 30%,transparent 65%);opacity:0;transition:opacity 1.4s var(--ease);pointer-events:none;z-index:2}
 #gate.opening .gate-light{opacity:1}
@@ -331,6 +344,7 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .p-arch .p-fig{position:absolute;left:4%;bottom:-2%;width:92%;height:auto;max-width:none;translate:calc(var(--tx) * 10px) calc(var(--ty) * 6px);filter:drop-shadow(0 10px 14px rgba(69,23,31,.25))}
 .p-arch .p-mandala{position:absolute;left:-10%;top:-8%;width:120%;max-width:none;opacity:.22;translate:calc(var(--tx) * -8px) calc(var(--ty) * -6px)}
 .p-arch .p-mandala img{width:100%;animation:spin 120s linear infinite}
+@media (hover:none){.p-arch .p-mandala img{animation:none}}
 .p-label{margin-top:var(--s3)}
 .p-name{font-family:var(--f-script);font-weight:400;font-size:clamp(50px,12vw,64px);line-height:1.1;margin:0;padding:0 .2em}
 .p-par{font-size:18px;font-weight:600;line-height:1.4;margin-top:var(--s1);padding:0 12px}
@@ -359,6 +373,7 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .cd-sub{text-align:center;margin-top:var(--s4);font-family:var(--f-label);font-size:16px;letter-spacing:.08em;color:var(--gold-l);opacity:.9}
 .cd-ele{bottom:34px;width:clamp(130px,30vw,270px)}
 .cd-ele.l{left:-14px} .cd-ele.r{right:-14px}
+@media (max-width:899px){.cd-ele.l{left:4px}.cd-ele.r{right:4px}}/* phones: whole elephant on screen */
 .cd-ele .sway{animation:eleSway 9s ease-in-out infinite;transform-origin:50% 100%}
 .cd-ele.r .ele{transform:scaleX(-1)}
 .cd-ele.r .sway{animation-delay:-4.5s}
@@ -507,11 +522,17 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 #fx{z-index:55} #fx.top{z-index:110}
 #glow{z-index:56}
 #flight{position:absolute;left:0;top:0;width:100%;pointer-events:none;z-index:40;overflow:hidden}
-#flight svg{position:absolute;left:0;top:0;overflow:visible}
-#plane{opacity:0;transition:opacity .6s}
+#flight .fl-clip svg{position:absolute;left:0;overflow:visible;will-change:transform}
+.fl-clip{position:absolute;left:0;width:100%;height:0;overflow:hidden}
+.fl-clip.done{top:0} .fl-clip.done svg{top:0}
+.fl-clip.todo{bottom:0} .fl-clip.todo svg{bottom:0}
+#plane,#planeHeart{position:absolute;left:0;top:0;will-change:transform}
+#plane{width:96px;height:96px;margin:-48px 0 0 -48px;opacity:0;transition:opacity .6s}
 #plane.show{opacity:1}
-#plane .flap{transform-box:fill-box;transform-origin:50% 50%;animation:parrotFlap 1.6s ease-in-out infinite}
-#parrotImg{filter:drop-shadow(0 6px 6px rgba(69,23,31,.25))}
+#planeHeart{width:12px;height:11px;margin:-5.5px 0 0 -6px;opacity:0}
+#planeHeart svg{display:block}
+#plane .flap{animation:parrotFlap 1.6s ease-in-out infinite}
+#parrotImg{display:block;width:96px;height:96px;filter:drop-shadow(0 6px 6px rgba(69,23,31,.25))}
 #progLotus img{width:100%;height:100%;display:block;object-fit:contain}
 #progress{position:fixed;left:0;top:0;right:0;height:3px;z-index:72;pointer-events:none;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,var(--gold-d),var(--gold-l) 50%,var(--gold))}
 #progLotus{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;width:34px;height:34px;z-index:72;pointer-events:none;opacity:0;transition:opacity .6s;color:var(--gold-d)}
@@ -531,10 +552,11 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .sheen{position:absolute;inset:0;overflow:hidden;pointer-events:none;-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
 .sheen::before{content:"";position:absolute;top:-10%;bottom:-10%;left:-100%;width:100%;background:linear-gradient(100deg,transparent 30%,rgba(255,247,224,.6) 50%,transparent 70%);animation:sheen 8s ease-in-out infinite}
 @keyframes sheen{0%,55%{transform:translateX(0)}100%{transform:translateX(200%)}}
+@media (hover:none){.sheen{display:none}}/* the foil glint needs a masked layer per peacock; phones skip it */
 .earring{transform-box:fill-box;transform-origin:50% 0;animation:sway 4.5s ease-in-out infinite}
 
 /* pause idle animation in sections that are off screen */
-.sec:not(.on) *, .sec:not(.on)::before{animation-play-state:paused!important}
+.sec:not(.on) *, .sec:not(.on) *::before, .sec:not(.on) *::after, .sec:not(.on)::before{animation-play-state:paused!important}
 
 /* ===== KEYFRAMES ===== */
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -712,17 +734,13 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
 
 <!-- ===== 5.18 PAPER-PLANE FLIGHT PATH ===== -->
 <div id="flight" aria-hidden="true">
-  <svg id="flightSvg" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <clipPath id="clipDone"><rect id="clipDoneR" x="0" y="0" width="10000" height="1"/></clipPath>
-      <clipPath id="clipTodo"><rect id="clipTodoR" x="0" y="0" width="10000" height="1"/></clipPath>
-    </defs>
-    <path id="pathDots" fill="none" stroke="#9C7A3C" stroke-opacity=".4" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="0 15" clip-path="url(#clipTodo)"/>
-    <path id="pathDash" fill="none" stroke="#9C7A3C" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="12 9" clip-path="url(#clipDone)"/>
-    <g id="planeHeart"><g transform="translate(-6 -5.5)"><use href="#heart" width="12" height="11" style="color:#C98F86"/></g></g>
-    <!-- Flow parrot carrying the invitation scroll; flies along the dotted path as you scroll -->
-    <g id="plane"><g class="flap"><image id="parrotImg" href="assets/flow/parrot.webp" x="-48" y="-48" width="96" height="96"/></g></g>
-  </svg>
+  <!-- The trail is two static SVGs, each inside a clip box. Only the box heights change while scrolling,
+       so the long paths are never repainted. The parrot and heart are plain elements moved with transform. -->
+  <div class="fl-clip todo" id="flTodo"><svg id="flightTodo" xmlns="http://www.w3.org/2000/svg"><path id="pathDots" fill="none" stroke="#9C7A3C" stroke-opacity=".4" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="0 15"/></svg></div>
+  <div class="fl-clip done" id="flDone"><svg id="flightDone" xmlns="http://www.w3.org/2000/svg"><path id="pathDash" fill="none" stroke="#9C7A3C" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="12 9"/></svg></div>
+  <div id="planeHeart"><svg viewBox="0 0 12 11" width="12" height="11"><use href="#heart" width="12" height="11" style="color:#C98F86"/></svg></div>
+  <!-- Flow parrot carrying the invitation scroll; flies along the dotted path as you scroll -->
+  <div id="plane"><div class="flap"><img id="parrotImg" src="assets/flow/parrot.webp" width="96" height="96" alt="" decoding="async"></div></div>
 </div>
 
 <main id="main">
@@ -877,8 +895,8 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
   <div class="decor hang l" data-speed="0.55" data-depth="0.7"><img src="assets/flow/lantern.webp" alt="" width="203" height="600" loading="lazy" decoding="async"></div>
   <div class="decor hang r" data-speed="0.55" data-depth="0.7"><img src="assets/flow/lantern.webp" alt="" width="203" height="600" loading="lazy" decoding="async"></div>
   <div class="decor watermark" data-speed="0.15"><img src="assets/flow/mandala.webp" alt="" width="870" height="900" loading="lazy" decoding="async"></div>
-  <div class="decor cd-ele l" data-speed="0.75" data-depth="0.6"><div class="sway"><div class="ele"><img class="ele-b" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"><img class="ele-t" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"></div></div></div>
-  <div class="decor cd-ele r" data-speed="0.75" data-depth="0.6"><div class="sway"><div class="ele"><img class="ele-b" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"><img class="ele-t" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"></div></div></div>
+  <div class="decor cd-ele l" data-speed="0.75" data-depth="0.25"><div class="sway"><div class="ele"><img class="ele-b" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"><img class="ele-t" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"></div></div></div>
+  <div class="decor cd-ele r" data-speed="0.75" data-depth="0.25"><div class="sway"><div class="ele"><img class="ele-b" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"><img class="ele-t" src="assets/flow/elephant.webp" alt="" width="900" height="799" loading="lazy" decoding="async"></div></div></div>
   <div class="wrap" data-glitter="6">
     <header class="sec-head">
       <p class="eyebrow" data-reveal="fade">Save the Date</p>
@@ -1150,7 +1168,8 @@ function frame(now) {
   const y = window.scrollY;                       // single layout read per frame
   S.dy = y - S.py; S.py = y; S.y = y;
   S.vy = lerp(S.vy, S.dy / dt, .18);
-  S.ly = RM ? y : lerp(S.ly, y, .14); if (Math.abs(S.ly - y) < .05) S.ly = y;
+  // touch scrolling is already smooth (native momentum); extra easing there only makes the layers trail behind the page
+  S.ly = (RM || !FINE) ? y : lerp(S.ly, y, .14); if (Math.abs(S.ly - y) < .05) S.ly = y;
   S.mx = lerp(S.mx, S.tmx, .06); S.my = lerp(S.my, S.tmy, .06);
   for (let i = 0; i < tickers.length; i++) tickers[i](dt, now);
   raf = requestAnimationFrame(frame);
@@ -1184,20 +1203,23 @@ const GYRO = (() => {
 })();
 
 /* ===== PARALLAX (data-speed / data-depth) ===== */
-const par = $$('[data-speed]').map(e => ({ e, s: parseFloat(e.dataset.speed) || 1, d: parseFloat(e.dataset.depth || 0), base: 0, last: '' }));
+const par = $$('[data-speed]').map(e => ({ e, s: parseFloat(e.dataset.speed) || 1, d: parseFloat(e.dataset.depth || 0), base: 0, h: 0, ty: 0, last: '' }));
 function measurePar() {
-  par.forEach(p => { p.e.style.transform = ''; p.last = ''; });
-  par.forEach(p => { const r = p.e.getBoundingClientRect(); p.base = r.top + window.scrollY + r.height / 2; });
+  // measured in place: the layer's own offset is subtracted, so nothing snaps back to its resting spot (no flicker on re-measure)
+  par.forEach(p => { const r = p.e.getBoundingClientRect(); p.base = r.top + window.scrollY + r.height / 2 - p.ty; p.h = r.height; });
 }
+// scroll-depth strength: phones use less, because JS can only follow the compositor's scroll one frame late
+const PAR_K = FINE ? .35 : .24;
 if (!RM) tickers.push(() => {
   const c = S.ly + S.vh / 2;
   for (const p of par) {
     const delta = c - p.base;
-    if (Math.abs(delta) > S.vh * 1.8) continue;
+    // layers more than ~1 screen outside the viewport are not touched (their last position is where they re-enter)
+    if (Math.abs(delta) > S.vh * 1.1 + p.h * .5) continue;
     // scroll depth (data-speed) + pointer/gyro depth (data-depth): near layers move more than far ones
-    const ty = delta * (1 - p.s) * .35 + S.my * p.d * 12, tx = S.mx * p.d * 20;
+    const ty = delta * (1 - p.s) * PAR_K + S.my * p.d * 12, tx = S.mx * p.d * 20;
     const t = `translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0)`;
-    if (t !== p.last) { p.e.style.transform = t; p.last = t; }
+    if (t !== p.last) { p.e.style.transform = t; p.last = t; p.ty = +ty.toFixed(1); }
   }
 });
 
@@ -1320,7 +1342,9 @@ const FX = (() => {
   const bloomImg = new Image(); let bloom = null;
   bloomImg.onload = () => { const s = 96, cv = document.createElement('canvas'); cv.width = cv.height = s; const k = Math.min(s / bloomImg.width, s / bloomImg.height); cv.getContext('2d').drawImage(bloomImg, (s - bloomImg.width * k) / 2, (s - bloomImg.height * k) / 2, bloomImg.width * k, bloomImg.height * k); bloom = cv; };
   if (!RM) bloomImg.src = 'assets/flow/blossom.webp';
-  function resize() { W = innerWidth; H = innerHeight; c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); dirty = true; }
+  // soft bokeh needs no retina resolution; a 1x full-screen canvas is 4-9x fewer pixels to clear and fill every frame
+  const CD = isSmall() ? 1 : Math.min(DPR, 1.5);
+  function resize() { W = innerWidth; H = innerHeight; c.width = Math.round(W * CD); c.height = Math.round(H * CD); ctx.setTransform(CD, 0, 0, CD, 0, 0); dirty = true; }
   function newOrb(o, top) {
     const L = o.layer;
     o.r = L === 0 ? rand(3, 6.5) : L === 1 ? rand(8, 15) : rand(26, 50);
@@ -1348,8 +1372,14 @@ const FX = (() => {
   function rise(x, y) { if (!RM) parts.push({ t: 0, x, y, vx: rand(-8, 8), vy: -rand(36, 60), r: rand(3, 6), life: 0, max: 3, rot: 0, g: true, rise: true }); }
   function setBand(top, h) { band.top = top; band.h = h; }
   function draw(spr, x, y, r, a) { const s = r * 2 * spr.k; ctx.globalAlpha = a; ctx.drawImage(spr.cv, x - s / 2, y - s / 2, s, s); }
+  let acc = 0;
   function tick(dt) {
     if (!ambient && !parts.length) { if (dirty) { ctx.clearRect(0, 0, W, H); dirty = false; } return; }
+    // drifting bokeh looks the same at 30 fps, and every canvas redraw costs a main-thread commit.
+    // While scrolling or while sparkle bursts are alive it stays at the full rate.
+    acc += dt;
+    if (acc < .028 && !parts.length && Math.abs(S.dy) < .3) return;
+    dt = Math.min(acc, .05); acc = 0;
     ctx.clearRect(0, 0, W, H); dirty = true;
     const boost = 1 + Math.min(Math.abs(S.vy) / 900, 1.6);
     const bt = band.top - S.y, bb = bt + band.h;
@@ -1394,7 +1424,8 @@ const GLOW = (() => {
   const c = $('#glow'), g = c.getContext('2d');
   let W = 0, H = 0, awake = false, last = 0, tx = -999, ty = -999, x = -999, y = -999;
   const trail = [], ripples = [];
-  function resize() { W = innerWidth; H = innerHeight; c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); g.setTransform(DPR, 0, 0, DPR, 0, 0); }
+  const CD = isSmall() ? 1 : Math.min(DPR, 1.5);
+  function resize() { W = innerWidth; H = innerHeight; c.width = Math.round(W * CD); c.height = Math.round(H * CD); g.setTransform(CD, 0, 0, CD, 0, 0); }
   if (!RM) {
     addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; tx = e.clientX; ty = e.clientY; if (x < -900) { x = tx; y = ty; } last = performance.now(); awake = true; }, { passive: true });
     addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') return; ripples.push({ x: e.clientX, y: e.clientY, t: 0 }); last = performance.now(); awake = true; }, { passive: true });
@@ -1755,13 +1786,15 @@ $('#lanternBtn').addEventListener('click', e => {
 
 /* ===== 5.18 PAPER-PLANE FLIGHT PATH ===== */
 const PLANE = (() => {
-  const wrap = $('#flight'), svg = $('#flightSvg'), dots = $('#pathDots'), dash = $('#pathDash');
-  const plane = $('#plane'), heart = $('#planeHeart'), rDone = $('#clipDoneR'), rTodo = $('#clipTodoR');
-  let xs = [], ys = [], ls = [], y0 = 0, y1 = 0, docH = 1, px = null, py = 0, pa = 0, show = false;
+  const wrap = $('#flight'), svgs = [$('#flightTodo'), $('#flightDone')], dots = $('#pathDots'), dash = $('#pathDash');
+  const plane = $('#plane'), heart = $('#planeHeart'), clipDone = $('#flDone'), clipTodo = $('#flTodo');
+  let xs = [], ys = [], ls = [], y0 = 0, y1 = 0, docH = 1, px = null, py = 0, pa = 0, show = false, lastCut = -1, lastHeartOn = false, lastPlaneT = '', lastHeartT = '';
   function build() {
     if (RM) return;
     const W = document.documentElement.clientWidth; docH = document.documentElement.scrollHeight;
-    wrap.style.height = docH + 'px'; svg.setAttribute('width', W); svg.setAttribute('height', docH); svg.setAttribute('viewBox', `0 0 ${W} ${docH}`);
+    wrap.style.height = docH + 'px';
+    for (const s of svgs) { s.setAttribute('width', W); s.setAttribute('height', docH); s.setAttribute('viewBox', `0 0 ${W} ${docH}`); }
+    lastCut = -1;
     const foot = $('#footer');
     y0 = docTop(invite) + 30; y1 = docTop(foot) + foot.offsetHeight * .35;
     const n = Math.max(2, Math.round((y1 - y0) / Math.max(520, S.vh * .9))), step = (y1 - y0) / n;
@@ -1778,8 +1811,9 @@ const PLANE = (() => {
       }
     }
     dots.setAttribute('d', d); dash.setAttribute('d', d);
-    rDone.setAttribute('width', W + 200); rTodo.setAttribute('width', W + 200); rDone.setAttribute('x', -100); rTodo.setAttribute('x', -100);
-    px = null;
+    px = null; lastPlaneT = lastHeartT = '';
+    // before the parrot appears the whole trail is "ahead" of it
+    lastCut = Math.round(y0 / 8) * 8; clipDone.style.height = lastCut + 'px'; clipTodo.style.height = Math.max(0, docH - lastCut) + 'px';
   }
   function idxByY(y) { let lo = 0, hi = ys.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (ys[m] < y) lo = m + 1; else hi = m; } return lo; }
   function idxByL(l) { let lo = 0, hi = ls.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (ls[m] < l) lo = m + 1; else hi = m; } return lo; }
@@ -1791,18 +1825,22 @@ const PLANE = (() => {
     const i = clamp(idxByY(clamp(ty, y0, y1)), 2, ys.length - 3);
     const x = xs[i], y = ys[i], ang = Math.atan2(ys[i + 2] - ys[i - 2], xs[i + 2] - xs[i - 2]) * 180 / Math.PI;
     if (px === null) { px = x; py = y; pa = ang; }
+    if (!show && Math.abs(px - x) < .5 && Math.abs(py - y) < .5) return;   // parked off screen: nothing to update
     px = lerp(px, x, .2); py = lerp(py, y, .2);
     let da = ang - pa; while (da > 180) da -= 360; while (da < -180) da += 360; pa += da * .15;
     // the parrot stays upright: it faces the way it is flying and only dips its head with the path
     const dir = Math.cos(pa * Math.PI / 180) >= 0 ? 1 : -1, tilt = clamp(((dir > 0 ? pa : 180 - pa) + 540) % 360 - 180, -28, 28);
     // smaller on phones so it doesn't hide text as it crosses the middle of the screen
     const k = Math.min(S.vw, S.vh) < 700 ? .62 : 1;
-    plane.setAttribute('transform', `translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${(dir * tilt).toFixed(1)}) scale(${dir * k} ${k})`);
+    const tp = `translate3d(${px.toFixed(1)}px,${py.toFixed(1)}px,0) rotate(${(dir * tilt).toFixed(1)}deg) scale(${dir * k},${k})`;
+    if (tp !== lastPlaneT) { lastPlaneT = tp; plane.style.transform = tp; }
     const hi = idxByL(Math.max(0, ls[i] - 46));
-    heart.setAttribute('transform', `translate(${xs[hi].toFixed(1)} ${ys[hi].toFixed(1)})`);
-    heart.style.opacity = show ? .55 : 0;
-    rDone.setAttribute('transform', `scale(1 ${Math.max(1, py).toFixed(1)})`);
-    rTodo.setAttribute('transform', `translate(0 ${py.toFixed(1)}) scale(1 ${Math.max(1, docH - py).toFixed(1)})`);
+    const th = `translate3d(${xs[hi].toFixed(1)}px,${ys[hi].toFixed(1)}px,0)`;
+    if (th !== lastHeartT) { lastHeartT = th; heart.style.transform = th; }
+    if (show !== lastHeartOn) { lastHeartOn = show; heart.style.opacity = show ? .55 : 0; }
+    // trail: dashes behind the parrot, dots ahead. Only the clip boxes resize (in 8px steps, hidden under the parrot).
+    const cut = Math.round(py / 8) * 8;
+    if (cut !== lastCut) { lastCut = cut; clipDone.style.height = cut + 'px'; clipTodo.style.height = Math.max(0, docH - cut) + 'px'; }
   }
   return { build, tick };
 })();
