@@ -542,8 +542,8 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 #plane.show{opacity:1}
 #planeHeart{width:12px;height:11px;margin:-5.5px 0 0 -6px;opacity:0}
 #planeHeart svg{display:block}
-#plane .flap{animation:parrotFlap 1.6s ease-in-out infinite}
-#parrotImg{display:block;width:96px;height:96px;filter:drop-shadow(0 6px 6px rgba(69,23,31,.25))}
+#plane .flap{animation:doveFlap 1.6s ease-in-out infinite}
+#doveImg{display:block;width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 5px rgba(69,23,31,.42))}   /* white bird: a firmer shadow keeps it readable on the pale sections */
 #progLotus img{width:100%;height:100%;display:block;object-fit:contain}
 #progress{position:fixed;left:0;top:0;right:0;height:3px;z-index:72;pointer-events:none;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,var(--gold-d),var(--gold-l) 50%,var(--gold))}
 #progLotus{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;width:34px;height:34px;z-index:72;pointer-events:none;opacity:0;transition:opacity .6s;color:var(--gold-d)}
@@ -591,7 +591,7 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 @keyframes lanternBob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
 @keyframes vineSway{0%,100%{transform:skewX(-1.6deg)}50%{transform:skewX(1.6deg)}}
 @keyframes glowPulse{0%,100%{opacity:.6;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
-@keyframes parrotFlap{0%,100%{transform:translateY(-3px)}50%{transform:translateY(4px)}}
+@keyframes doveFlap{0%,100%{transform:translateY(-3px)}50%{transform:translateY(4px)}}
 
 /* ===== LANGUAGE TOGGLE (/en and /ma pages) ===== */
 .lang{position:fixed;z-index:73;top:calc(10px + env(safe-area-inset-top));left:10px;display:flex;padding:3px;border-radius:999px;background:rgba(251,243,228,.92);border:1px solid rgba(156,122,60,.6);box-shadow:0 8px 20px -12px rgba(92,35,48,.5);opacity:0;pointer-events:none;transition:opacity .6s}
@@ -751,12 +751,12 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
 <!-- ===== 5.18 PAPER-PLANE FLIGHT PATH ===== -->
 <div id="flight" aria-hidden="true">
   <!-- The trail is two static SVGs, each inside a clip box. Only the box heights change while scrolling,
-       so the long paths are never repainted. The parrot and heart are plain elements moved with transform. -->
+       so the long paths are never repainted. The dove and heart are plain elements moved with transform. -->
   <div class="fl-clip todo" id="flTodo"><svg id="flightTodo" xmlns="http://www.w3.org/2000/svg"><path id="pathDots" fill="none" stroke="#9C7A3C" stroke-opacity=".4" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="0 15"/></svg></div>
   <div class="fl-clip done" id="flDone"><svg id="flightDone" xmlns="http://www.w3.org/2000/svg"><path id="pathDash" fill="none" stroke="#9C7A3C" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="12 9"/></svg></div>
   <div id="planeHeart"><svg viewBox="0 0 12 11" width="12" height="11"><use href="#heart" width="12" height="11" style="color:#C98F86"/></svg></div>
-  <!-- Flow parrot carrying the invitation scroll; flies along the dotted path as you scroll -->
-  <div id="plane"><div class="flap"><img id="parrotImg" src="assets/flow/parrot.webp" width="96" height="96" alt="" decoding="async"></div></div>
+  <!-- Flow white dove carrying the invitation scroll; flies along the dotted path as you scroll -->
+  <div id="plane"><div class="flap"><img id="doveImg" src="assets/flow/dove.webp" width="96" height="96" alt="" decoding="async"></div></div>
 </div>
 
 <main id="main">
@@ -1832,7 +1832,7 @@ const PLANE = (() => {
     }
     dots.setAttribute('d', d); dash.setAttribute('d', d);
     px = null; lastPlaneT = lastHeartT = '';
-    // before the parrot appears the whole trail is "ahead" of it
+    // before the dove appears the whole trail is "ahead" of it
     lastCut = Math.round(y0 / 8) * 8; clipDone.style.height = lastCut + 'px'; clipTodo.style.height = Math.max(0, docH - lastCut) + 'px';
   }
   function idxByY(y) { let lo = 0, hi = ys.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (ys[m] < y) lo = m + 1; else hi = m; } return lo; }
@@ -1848,7 +1848,7 @@ const PLANE = (() => {
     if (!show && Math.abs(px - x) < .5 && Math.abs(py - y) < .5) return;   // parked off screen: nothing to update
     px = lerp(px, x, .2); py = lerp(py, y, .2);
     let da = ang - pa; while (da > 180) da -= 360; while (da < -180) da += 360; pa += da * .15;
-    // the parrot stays upright: it faces the way it is flying and only dips its head with the path
+    // the dove stays upright: it faces the way it is flying and only dips its head with the path
     const dir = Math.cos(pa * Math.PI / 180) >= 0 ? 1 : -1, tilt = clamp(((dir > 0 ? pa : 180 - pa) + 540) % 360 - 180, -28, 28);
     // smaller on phones so it doesn't hide text as it crosses the middle of the screen
     const k = Math.min(S.vw, S.vh) < 700 ? .62 : 1;
@@ -1858,7 +1858,7 @@ const PLANE = (() => {
     const th = `translate3d(${xs[hi].toFixed(1)}px,${ys[hi].toFixed(1)}px,0)`;
     if (th !== lastHeartT) { lastHeartT = th; heart.style.transform = th; }
     if (show !== lastHeartOn) { lastHeartOn = show; heart.style.opacity = show ? .55 : 0; }
-    // trail: dashes behind the parrot, dots ahead. Only the clip boxes resize (in 8px steps, hidden under the parrot).
+    // trail: dashes behind the dove, dots ahead. Only the clip boxes resize (in 8px steps, hidden under the dove).
     const cut = Math.round(py / 8) * 8;
     if (cut !== lastCut) { lastCut = cut; clipDone.style.height = cut + 'px'; clipTodo.style.height = Math.max(0, docH - cut) + 'px'; }
   }
