@@ -36,7 +36,7 @@
  FUNCTIONS
  Wedding | 1 January 2027 | Friday | 10:30 AM | (venue blank) | (dress code blank)
 
- PHOTOS: photo1.jpg, photo2.jpg, photo3.jpg, photo4.jpg (relative, same folder)
+ PHOTOS: hero uses photo4.jpg. The album tiles come from src/gallery.json (build.mjs writes them in place of the GALLERY marker); images are in assets/photos/.
  To change the Maps link: edit CONFIG.MAPS_URL in the script near the bottom.
 ================================================================
 -->
@@ -467,7 +467,7 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .g-btn{position:relative;display:block;width:100%;padding:0;border:0;background:var(--sage-d);cursor:zoom-in;aspect-ratio:2/3;overflow:hidden;border-radius:999px 999px 18px 18px;box-shadow:var(--shadow);-webkit-tap-highlight-color:transparent}
 .g-btn.pill{border-radius:999px}
 .g-btn::after{content:"";position:absolute;inset:6px;border-radius:inherit;border:1px solid rgba(232,211,160,.95);box-shadow:0 0 0 1px rgba(156,122,60,.45);pointer-events:none}
-.g-btn img{position:absolute;left:0;top:-8%;width:100%;height:116%;object-fit:cover;will-change:transform}
+.g-btn img{position:absolute;left:0;top:-8%;width:100%;height:116%;object-fit:cover}
 .lb{position:fixed;inset:0;z-index:95;display:grid;place-items:center}
 .lb[hidden]{display:none}
 .lb-bg{position:absolute;inset:0;background:rgba(43,13,19,.94);opacity:0;transition:opacity .45s}
@@ -1016,10 +1016,7 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
       <p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>
     </header>
     <ul class="gallery" id="gallery">
-      <li class="g-item" data-reveal="clip"><div class="g-tilt" data-tilt><button class="g-btn" type="button" data-i="0" aria-label="Open photo 1 of 4"><img src="photo1.jpg" width="800" height="1200" loading="lazy" style="object-position:50% 30%" alt="Vrishali and Vedant standing side by side, she in a pink saree and he in a paisley vest"></button></div></li>
-      <li class="g-item" data-reveal="clip" style="--d:.12s"><div class="g-tilt" data-tilt><button class="g-btn pill" type="button" data-i="1" aria-label="Open photo 2 of 4"><img src="photo3.jpg" width="800" height="1200" loading="lazy" style="object-position:50% 34%" alt="Vrishali and Vedant smiling, his arm around her, in a pink saree and paisley vest"></button></div></li>
-      <li class="g-item" data-reveal="clip" style="--d:.24s"><div class="g-tilt" data-tilt><button class="g-btn pill" type="button" data-i="2" aria-label="Open photo 3 of 4"><img src="photo2.jpg" width="800" height="1200" loading="lazy" style="object-position:50% 26%" alt="Vrishali in a champagne lehenga and Vedant in a plum bandhgala, standing before a curtain"></button></div></li>
-      <li class="g-item" data-reveal="clip" style="--d:.36s"><div class="g-tilt" data-tilt><button class="g-btn" type="button" data-i="3" aria-label="Open photo 4 of 4"><img src="photo4.jpg" width="800" height="1200" loading="lazy" style="object-position:50% 40%" alt="Vrishali and Vedant walking down the aisle as soft white balls fall around them"></button></div></li>
+<!--GALLERY-->
     </ul>
   </div>
 </section>
@@ -1681,18 +1678,20 @@ function measureTiles() { tiles.forEach(t => { t.img.style.transform = ''; const
 if (!RM) tickers.push(() => {
   for (const t of tiles) {
     const delta = (S.ly + S.vh / 2 - t.base) / (S.vh / 2 + t.h / 2);
-    if (Math.abs(delta) > 1.3) continue;
+    if (Math.abs(delta) > 1.3) { if (t.last) { t.img.style.transform = ''; t.last = ''; } continue; }   // off screen: drop the layer (35 tiles)
     const v = `translate3d(0,${(-clamp(delta, -1, 1) * .06 * t.h).toFixed(1)}px,0)`;
     if (v !== t.last) { t.img.style.transform = v; t.last = v; }
   }
 });
 const lb = $('#lb'), lbImg = $('#lbImg'), lbCount = $('#lbCount');
-const photos = tiles.map(t => ({ src: t.img.getAttribute('src'), alt: t.img.getAttribute('alt') }));
+const photos = tiles.map(t => ({ src: t.b.dataset.full || t.img.getAttribute('src'), alt: t.img.getAttribute('alt') }));
+const lbWarm = i => { const p = photos[(i + photos.length) % photos.length]; if (p) new Image().src = p.src; };   // fetch the neighbours so swiping feels instant
 let lbOpen = false, lbCur = 0, lbLast = null;
 function lbShow(i, dir) {
   lbCur = (i + photos.length) % photos.length;
   lbImg.src = photos[lbCur].src; lbImg.alt = photos[lbCur].alt;
   lbCount.textContent = `${num(lbCur + 1)} / ${num(photos.length)}`;
+  lbWarm(lbCur + 1); lbWarm(lbCur - 1);
   if (dir && !RM && lbImg.animate) lbImg.animate([{ opacity: 0, transform: `translateX(${dir * 40}px)` }, { opacity: 1, transform: 'none' }], { duration: 450, easing: 'cubic-bezier(.22,.61,.36,1)' });
 }
 function zoomRect(from, reverse, done) {

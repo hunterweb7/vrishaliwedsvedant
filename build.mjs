@@ -150,14 +150,7 @@ const MR = [
   ['<p class="eyebrow" data-reveal="fade">Our Moments</p>', '<p class="eyebrow" data-reveal="fade">आठवणी</p>'],
   ['<span>Photo Album</span></span></h2>', '<span>छायाचित्रे</span></span></h2>'],
   ['<p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>', '<p class="sub" data-reveal="up" style="--d:.3s">मोठे पाहण्यासाठी फोटोवर टॅप करा</p>'],
-  ['aria-label="Open photo 1 of 4"', 'aria-label="फोटो १ (४ पैकी) उघडा"'],
-  ['aria-label="Open photo 2 of 4"', 'aria-label="फोटो २ (४ पैकी) उघडा"'],
-  ['aria-label="Open photo 3 of 4"', 'aria-label="फोटो ३ (४ पैकी) उघडा"'],
-  ['aria-label="Open photo 4 of 4"', 'aria-label="फोटो ४ (४ पैकी) उघडा"'],
-  ['alt="Vrishali and Vedant standing side by side, she in a pink saree and he in a paisley vest"', 'alt="वृषाली व वेदांत शेजारी उभे, गुलाबी साडी व पैस्ली जाकीट"'],
-  ['alt="Vrishali and Vedant smiling, his arm around her, in a pink saree and paisley vest"', 'alt="वृषाली व वेदांत हसताना, गुलाबी साडी व पैस्ली जाकीट"'],
-  ['alt="Vrishali in a champagne lehenga and Vedant in a plum bandhgala, standing before a curtain"', 'alt="शॅम्पेन लेहेंग्यात वृषाली व जांभळ्या बंदगळ्यात वेदांत"'],
-  ['alt="Vrishali and Vedant walking down the aisle as soft white balls fall around them"', 'alt="वृषाली व वेदांत चालताना, भोवती पांढरे गोळे पडत आहेत"'],
+  // album tiles (aria-labels and alt text) are written by galleryHtml() below
 
   // 5.17 families
   ['<p class="eyebrow" data-reveal="fade">Families</p>', '<p class="eyebrow" data-reveal="fade">कुटुंबीय</p>'],
@@ -202,8 +195,23 @@ function applyAll(html, pairs) {
   return html;
 }
 
-const en = fixPaths(T);
-const mr = fixPaths(applyAll(T, MR));
+/* ---------- album tiles, from src/gallery.json (order is chosen so look-alike photos never touch) ----------
+   Tiles use a small 2:3 thumbnail (assets/photos/ID t.webp); the viewer loads the large file (data-full). */
+const GALLERY = JSON.parse(readFileSync(new URL("./src/gallery.json", import.meta.url), "utf8"));
+const GALLERY_MARK = "<!--GALLERY-->";
+if (T.split(GALLERY_MARK).length !== 2) { console.error("template needs exactly one " + GALLERY_MARK); process.exit(1); }
+const dev = (n) => String(n).replace(/\d/g, (d) => "०१२३४५६७८९"[d]);
+const attr = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const galleryHtml = (lang) => GALLERY.map((p, i) => {
+  const label = lang === "mr" ? `फोटो ${dev(i + 1)} (${dev(GALLERY.length)} पैकी) उघडा` : `Open photo ${i + 1} of ${GALLERY.length}`;
+  const alt = lang === "mr" ? p.mr : p.en;
+  const shape = i % 4 === 0 || i % 4 === 3 ? "" : " pill";   // arch, pill, pill, arch ... reads as a pattern in both the 2- and 4-column grids
+  const d = ((i % 4) * 0.1).toFixed(1);
+  return `      <li class="g-item" data-reveal="clip"${i % 4 ? ` style="--d:${d}s"` : ""}><div class="g-tilt" data-tilt><button class="g-btn${shape}" type="button" data-i="${i}" data-full="../assets/photos/${p.id}.webp" aria-label="${attr(label)}"><img src="../assets/photos/${p.id}t.webp" width="560" height="840" loading="lazy" decoding="async" alt="${attr(alt)}"></button></div></li>`;
+}).join("\n");
+
+const en = fixPaths(T).replace(GALLERY_MARK, () => galleryHtml("en"));
+const mr = fixPaths(applyAll(T, MR)).replace(GALLERY_MARK, () => galleryHtml("mr"));
 
 // The English page must still contain every English line exactly as typed.
 for (const must of ["Vrishali", "Vedant", "(D/o. Mrs. Archana &amp; Mr. Subhash Gulhane)", "(S/o Mrs. Priya &amp; Dr. Sanjay Tirathkar)", "Silver Star Celebration Hall", "Shegaon-Rahatgaon Road, Amravati", "10:30 AM", "1 January 2027", "With Regards: Sau. Archana &amp; Mr. Subhash Gulhane, Surali, Tal. Warud, Dist. Amravati", "917709806289"]) {
@@ -250,6 +258,8 @@ mkdirSync(new URL("./assets/flow/", OUT), { recursive: true });
 for (const f of readdirSync(new URL("./assets/flow/", import.meta.url))) {
   if (f.endsWith(".webp")) cpSync(new URL("./assets/flow/" + f, import.meta.url), new URL("./assets/flow/" + f, OUT));
 }
+mkdirSync(new URL("./assets/photos/", OUT), { recursive: true });
+for (const p of GALLERY) for (const f of [`${p.id}.webp`, `${p.id}t.webp`]) cpSync(new URL("./assets/photos/" + f, import.meta.url), new URL("./assets/photos/" + f, OUT));
 for (const f of ["og-en.jpg", "og-mr.jpg"]) cpSync(new URL("./assets/" + f, import.meta.url), new URL("./assets/" + f, OUT));
 for (const n of [1, 2, 3, 4]) cpSync(new URL(`./photo${n}.jpg`, import.meta.url), new URL(`./photo${n}.jpg`, OUT));
 
