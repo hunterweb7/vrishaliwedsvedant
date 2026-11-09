@@ -151,6 +151,12 @@ const MR = [
   ['<span>Photo Album</span></span></h2>', '<span>छायाचित्रे</span></span></h2>'],
   ['<p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>', '<p class="sub" data-reveal="up" style="--d:.3s">मोठे पाहण्यासाठी फोटोवर टॅप करा</p>'],
   ['aria-label="Photographs"', 'aria-label="छायाचित्रे"'],
+  // designer's credit (agent-written Marathi; the brand name and phone number stay as written)
+  ['aria-label="Website credit"', 'aria-label="वेबसाइट निर्मिती"'],
+  ['<p class="cr-by">Website crafted by <b>Rvic Edits</b></p>', '<p class="cr-by">वेबसाइट निर्मिती : <b>Rvic Edits</b></p>'],
+  ['<p class="cr-txt">Planning a celebration of your own? We design elegant, animated invitation websites just like this one. Call or WhatsApp us to get yours.</p>', '<p class="cr-txt">तुमच्या खास कार्यक्रमासाठी असेच सुंदर, ॲनिमेटेड निमंत्रण संकेतस्थळ हवे आहे? आम्हाला कॉल करा किंवा व्हॉट्सॲप करा.</p>'],
+  ['</svg>Call +91 81490 37725</a>', '</svg>कॉल करा +91 81490 37725</a>'],
+  ['</svg>Message Rvic Edits on WhatsApp</a>', '</svg>Rvic Edits ला WhatsApp वर संदेश पाठवा</a>'],
   ['data-label-on="Mute music" data-label-off="Play music" aria-label="Play music"', 'data-label-on="संगीत बंद करा" data-label-off="संगीत सुरू करा" aria-label="संगीत सुरू करा"'],
   // album tiles (aria-labels and alt text) are written by galleryHtml() below
 
