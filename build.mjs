@@ -151,6 +151,7 @@ const MR = [
   ['<span>Photo Album</span></span></h2>', '<span>छायाचित्रे</span></span></h2>'],
   ['<p class="sub" data-reveal="up" style="--d:.3s">Tap a photo to view</p>', '<p class="sub" data-reveal="up" style="--d:.3s">मोठे पाहण्यासाठी फोटोवर टॅप करा</p>'],
   ['aria-label="Photographs"', 'aria-label="छायाचित्रे"'],
+  ['data-label-on="Mute music" data-label-off="Play music" aria-label="Play music"', 'data-label-on="संगीत बंद करा" data-label-off="संगीत सुरू करा" aria-label="संगीत सुरू करा"'],
   // album tiles (aria-labels and alt text) are written by galleryHtml() below
 
   // 5.17 families
@@ -267,6 +268,8 @@ mkdirSync(new URL("./assets/flow/", OUT), { recursive: true });
 for (const f of readdirSync(new URL("./assets/flow/", import.meta.url))) {
   if (f.endsWith(".webp")) cpSync(new URL("./assets/flow/" + f, import.meta.url), new URL("./assets/flow/" + f, OUT));
 }
+mkdirSync(new URL("./assets/audio/", OUT), { recursive: true });
+cpSync(new URL("./assets/audio/mangal-rang.mp3", import.meta.url), new URL("./assets/audio/mangal-rang.mp3", OUT));
 mkdirSync(new URL("./assets/photos/", OUT), { recursive: true });
 for (const p of GALLERY) for (const f of [`${p.id}.webp`, `${p.id}t.webp`]) cpSync(new URL("./assets/photos/" + f, import.meta.url), new URL("./assets/photos/" + f, OUT));
 for (const f of ["og-en.jpg", "og-mr.jpg"]) cpSync(new URL("./assets/" + f, import.meta.url), new URL("./assets/" + f, OUT));
