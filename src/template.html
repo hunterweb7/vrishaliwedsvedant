@@ -711,7 +711,6 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5 L19 19 M19 5 L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 4 L17 12 L9 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3.5 L9.4 3 L11.2 7.6 L9 9.2 C10.2 11.8 12.2 13.8 14.8 15 L16.4 12.8 L21 14.6 L20.5 17.4 C20.2 19 18.8 20.2 17.2 20 C9.9 19.3 4.7 14.1 4 6.8 C3.8 5.2 5 3.8 6.6 3.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
   <symbol id="i-lantern" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2 V4 M9 4 H15 M7 6 C4 10 4 15 8 19 H16 C20 15 20 10 17 6Z M9 19 V21 H15 V19"/></g></symbol>
 
   <radialGradient id="gHavanGlow"><stop offset="0" stop-color="#FFE3A8" stop-opacity=".85"/><stop offset=".5" stop-color="#F3C98A" stop-opacity=".3"/><stop offset="1" stop-color="#F3C98A" stop-opacity="0"/></radialGradient>
@@ -1094,9 +1093,8 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
     <p class="f-close" data-reveal="scale">Vrishali with Vedant</p>
     <aside class="credit" data-reveal="up" aria-label="Website credit">
       <p class="cr-by">Website crafted by <b>Rvic Edits</b></p>
-      <p class="cr-txt">Planning a celebration of your own? We design elegant, animated invitation websites just like this one. Call or WhatsApp us to get yours.</p>
+      <p class="cr-txt">Planning a celebration of your own? We design elegant, animated invitation websites just like this one. Message us on WhatsApp to get yours.</p>
       <div class="cr-actions">
-        <a class="btn" href="tel:+918149037725"><svg aria-hidden="true"><use href="#i-phone"/></svg>Call +91 81490 37725</a>
         <a class="btn solid" href="https://wa.me/918149037725" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-chat"/></svg>Message Rvic Edits on WhatsApp</a>
       </div>
     </aside>
@@ -1518,8 +1516,9 @@ const MUSIC = (() => {
   if (!ins || !ver || !btn) return { gesture() {}, verse() {} };
   const L0 = +ins.dataset.loopFrom, L1 = +ins.dataset.loopTo, VI = +ins.dataset.vol || 1, VV = +ver.dataset.vol || .55;
   let pref = 'on';
-  try { if (localStorage.getItem('vv-music') === 'off') pref = 'off'; } catch (e) {}
-  const save = () => { try { localStorage.setItem('vv-music', pref); } catch (e) {} };
+  // Music is ON by default. A mute lasts only for the current visit (a new visit starts with music again).
+  try { localStorage.removeItem('vv-music'); if (sessionStorage.getItem('vv-music') === 'off') pref = 'off'; } catch (e) {}
+  const save = () => { try { sessionStorage.setItem('vv-music', pref); } catch (e) {} };
   let started = false, inVerse = false, looping = false, loopT = 0, primed = false;
   let wasPlaying = [];
   const saveData = !!(navigator.connection && navigator.connection.saveData);
@@ -1599,9 +1598,11 @@ const MUSIC = (() => {
     if (e.target && e.target.closest && e.target.closest('.snd')) return;
     prime();
     if (started || pref !== 'on' || inVerse) return;
-    start().then(ok => { if (ok) { removeEventListener('pointerdown', first, true); removeEventListener('keydown', first, true); } });
+    start().then(ok => { if (ok) GESTURES.forEach(g => removeEventListener(g, first, true)); });
   };
-  addEventListener('pointerdown', first, true); addEventListener('keydown', first, true);
+  // pointerdown suits Chrome/Android; iOS Safari only counts touchend/click as a permission to play sound
+  const GESTURES = ['pointerdown', 'touchend', 'click', 'keydown'];
+  GESTURES.forEach(g => addEventListener(g, first, true));
   ins.addEventListener('ended', () => { try { ins.currentTime = L0; } catch (e) {} if (pref === 'on' && !inVerse) ins.play().catch(() => {}); });
   ver.addEventListener('ended', () => {   // the verse plays again from the start, gently
     try { ver.currentTime = 0; } catch (e) {}
