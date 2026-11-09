@@ -275,7 +275,7 @@ for (const f of readdirSync(new URL("./assets/flow/", import.meta.url))) {
   if (f.endsWith(".webp")) cpSync(new URL("./assets/flow/" + f, import.meta.url), new URL("./assets/flow/" + f, OUT));
 }
 mkdirSync(new URL("./assets/audio/", OUT), { recursive: true });
-cpSync(new URL("./assets/audio/mangal-rang.mp3", import.meta.url), new URL("./assets/audio/mangal-rang.mp3", OUT));
+for (const f of ["instrumental.mp3", "verse.mp3"]) cpSync(new URL("./assets/audio/" + f, import.meta.url), new URL("./assets/audio/" + f, OUT));
 mkdirSync(new URL("./assets/photos/", OUT), { recursive: true });
 for (const p of GALLERY) for (const f of [`${p.id}.webp`, `${p.id}t.webp`]) cpSync(new URL("./assets/photos/" + f, import.meta.url), new URL("./assets/photos/" + f, OUT));
 for (const f of ["og-en.jpg", "og-mr.jpg"]) cpSync(new URL("./assets/" + f, import.meta.url), new URL("./assets/" + f, OUT));

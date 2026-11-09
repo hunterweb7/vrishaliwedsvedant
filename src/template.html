@@ -1116,8 +1116,9 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
   <p class="lb-count" id="lbCount">1 / 4</p>
 </div>
 
-<!-- ===== MUSIC: instrumental intro on the gate, the sung verse starts when the doors open (data-verse = seconds into the song where the singing begins) ===== -->
-<audio id="bgm" src="assets/audio/mangal-rang.mp3" preload="auto" playsinline data-verse="14.4" data-loop-from="2.2" data-loop-to="12.9"></audio>
+<!-- ===== MUSIC: #bgm = instrumental on the gate (its soft opening, seconds loop-from..loop-to, repeats), #bgv = the sung verse that fades in when the doors open. data-vol = loudness 0-1 ===== -->
+<audio id="bgm" src="assets/audio/instrumental.mp3" preload="auto" playsinline data-vol="1" data-loop-from="1" data-loop-to="33.5"></audio>
+<audio id="bgv" src="assets/audio/verse.mp3" preload="metadata" playsinline data-vol="0.55"></audio>
 <button class="snd" id="sndBtn" type="button" data-state="off" data-label-on="Mute music" data-label-off="Play music" aria-label="Play music">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path class="body" d="M4 9.5v5h3.6L12.5 19V5L7.6 9.5H4z"/><g class="i-on"><path d="M15.8 9.2a4 4 0 0 1 0 5.6"/><path d="M18.4 6.6a7.7 7.7 0 0 1 0 10.8"/></g><g class="i-off"><path d="M16 9.6l5 4.8M21 9.6l-5 4.8"/></g></svg>
 </button>
@@ -1513,76 +1514,104 @@ tickers.push(GLOW.tick);
    Browsers only allow sound after a touch/click, so the first touch anywhere (or the music button) starts the intro.
    The visitor's mute choice is remembered. Mute = pause, so nothing keeps playing silently. */
 const MUSIC = (() => {
-  const a = $('#bgm'), btn = $('#sndBtn');
-  if (!a || !btn) return { gesture() {}, verse() {} };
-  const VERSE = +a.dataset.verse, L0 = +a.dataset.loopFrom, L1 = +a.dataset.loopTo, VOL = .85;
+  const ins = $('#bgm'), ver = $('#bgv'), btn = $('#sndBtn');
+  if (!ins || !ver || !btn) return { gesture() {}, verse() {} };
+  const L0 = +ins.dataset.loopFrom, L1 = +ins.dataset.loopTo, VI = +ins.dataset.vol || 1, VV = +ver.dataset.vol || .55;
   let pref = 'on';
   try { if (localStorage.getItem('vv-music') === 'off') pref = 'off'; } catch (e) {}
   const save = () => { try { localStorage.setItem('vv-music', pref); } catch (e) {} };
-  let started = false, inVerse = false, looping = false, switching = false, fadeT = 0, loopT = 0, wasPlaying = false;
-  if (navigator.connection && navigator.connection.saveData) a.preload = 'none';
-  const audible = () => !a.paused && pref === 'on';
+  let started = false, inVerse = false, looping = false, loopT = 0, primed = false;
+  let wasPlaying = [];
+  const saveData = !!(navigator.connection && navigator.connection.saveData);
+  if (saveData) { ins.preload = 'none'; ver.preload = 'none'; }
+  else addEventListener('load', () => setTimeout(() => { ver.preload = 'auto'; }, 800));   // the verse is fetched once the page itself has loaded
+  const cur = () => inVerse ? ver : ins;
+  const audible = () => pref === 'on' && (!ins.paused || !ver.paused);
   function paint() {
     const on = audible();
     btn.dataset.state = on ? 'on' : 'off';
     btn.setAttribute('aria-label', on ? btn.dataset.labelOn : btn.dataset.labelOff);
     btn.classList.toggle('hint', !on && pref === 'on' && !started);   // sound is allowed but the browser is waiting for a touch
   }
-  function fade(to, ms, done) {
-    clearInterval(fadeT);
-    const from = a.volume, t0 = performance.now();
-    if (ms <= 0) { a.volume = to; if (done) done(); return; }
-    fadeT = setInterval(() => {
+  function fade(el, to, ms, done) {
+    clearInterval(el._f);
+    const from = el.volume, t0 = performance.now();
+    if (ms <= 0) { el.volume = to; if (done) done(); return; }
+    el._f = setInterval(() => {
       const k = Math.min(1, (performance.now() - t0) / ms);
-      a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
-      if (k >= 1) { clearInterval(fadeT); if (done) done(); }
+      el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+      if (k >= 1) { clearInterval(el._f); if (done) done(); }
     }, 40);
   }
-  function watchLoop() {   // gate only: when the intro nears its end, fade out and begin again so it can wait as long as it likes
+  function watchLoop() {   // gate only: when the soft part of the instrumental ends, fade out and begin again so it can wait as long as it likes
     clearInterval(loopT);
     loopT = setInterval(() => {
-      if (inVerse || a.paused || looping) return;
-      if (a.currentTime >= L1 - 1.1) { looping = true; fade(0, 1000, () => { try { a.currentTime = L0; } catch (e) {} fade(VOL, 1300, () => { looping = false; }); }); }
+      if (inVerse || ins.paused || looping) return;
+      if (ins.currentTime >= L1 - 1.1) { looping = true; fade(ins, 0, 1000, () => { try { ins.currentTime = L0; } catch (e) {} fade(ins, VI, 1300, () => { looping = false; }); }); }
     }, 120);
   }
   function start() {
     if (pref !== 'on') { paint(); return Promise.resolve(false); }
+    const a = cur();
     if (!a.paused) { paint(); return Promise.resolve(true); }
     a.volume = 0;
-    if (inVerse) { try { if (a.currentTime < VERSE - .5) a.currentTime = VERSE; } catch (e) {} }
-    else { try { if (a.currentTime < L0 - .1) a.currentTime = Math.max(0, L0 - 2); } catch (e) {} }   // skip the silent lead-in; the fade covers the rest
     const p = a.play();
-    const ok = () => { started = true; if (!inVerse) { fade(VOL, 1500); watchLoop(); } else if (!switching) fade(VOL, 700); paint(); return true; };
+    const ok = () => {
+      if (a === ins && inVerse) { ins.pause(); return true; }   // the doors opened while this was still starting
+      started = true; fade(a, a === ins ? VI : VV, a === ins ? 1500 : 700);
+      if (a === ins) watchLoop();
+      paint(); return true;
+    };
     if (!p || !p.then) return Promise.resolve(ok());
     return p.then(ok, () => { paint(); return false; });
   }
-  // the doors are opening: switch from the instrumental to the verse
+  // The verse is a separate element. Touch devices only let an element play later if it was played once inside a tap,
+  // so the first tap plays it silently for a moment and pauses it again.
+  function prime() {
+    if (primed || inVerse) return;
+    primed = true; ver.muted = true;
+    const undo = () => { if (!inVerse) { ver.pause(); try { ver.currentTime = 0; } catch (e) {} } ver.muted = false; };
+    const p = ver.play();
+    if (p && p.then) p.then(undo, () => { ver.muted = false; primed = false; }); else undo();
+  }
+  // the doors are opening: the instrumental fades away while the verse fades in
   function verse() {
     if (inVerse) return;
-    inVerse = true; clearInterval(loopT);
-    if (pref !== 'on') { try { a.currentTime = VERSE; } catch (e) {} paint(); return; }   // muted: line up the verse so unmuting joins it
-    if (a.paused) { try { a.currentTime = VERSE; } catch (e) {} start(); return; }
-    // playing the intro right now: dip, jump to the verse, come back up. A timer (not the fade callback) does the jump,
-    // so a late play() promise starting its own fade cannot cancel it.
-    switching = true; fade(0, 380);
-    setTimeout(() => { try { a.currentTime = VERSE; } catch (e) {} switching = false; if (pref === 'on') fade(VOL, 650); }, 400);
+    inVerse = true; clearInterval(loopT); looping = false;
+    ver.muted = false;
+    try { ver.currentTime = 0; } catch (e) {}
+    if (pref !== 'on') { paint(); return; }   // muted: the verse is lined up so unmuting joins it from the beginning
+    ver.volume = 0;
+    const go = () => { started = true; fade(ver, VV, 900); fade(ins, 0, 1100, () => ins.pause()); paint(); };
+    const p = ver.play();
+    if (!p || !p.then) go();
+    else p.then(go, () => { inVerse = false; if (!ins.paused) { fade(ins, VI, 400); watchLoop(); } paint(); });   // the browser refused: keep the instrumental going
   }
   btn.addEventListener('click', () => {
-    if (audible()) { pref = 'off'; save(); fade(0, 220, () => { a.pause(); paint(); }); }
-    else { pref = 'on'; save(); start(); }
+    if (audible()) {
+      pref = 'off'; save();
+      [ins, ver].forEach(el => { if (!el.paused) fade(el, 0, 220, () => { el.pause(); paint(); }); });
+    } else { pref = 'on'; save(); start(); }
     paint();
   });
-  // first touch/key anywhere (except the music button itself) lets the intro begin
+  // first touch/key anywhere (except the music button itself) lets the instrumental begin and readies the verse
   const first = e => {
-    if (started || pref !== 'on' || inVerse || (e.target && e.target.closest && e.target.closest('.snd'))) return;
+    if (e.target && e.target.closest && e.target.closest('.snd')) return;
+    prime();
+    if (started || pref !== 'on' || inVerse) return;
     start().then(ok => { if (ok) { removeEventListener('pointerdown', first, true); removeEventListener('keydown', first, true); } });
   };
   addEventListener('pointerdown', first, true); addEventListener('keydown', first, true);
-  a.addEventListener('ended', () => { try { a.currentTime = inVerse ? VERSE : L0; } catch (e) {} if (pref === 'on') a.play().catch(() => {}); });
-  a.addEventListener('playing', paint); a.addEventListener('pause', paint);
+  ins.addEventListener('ended', () => { try { ins.currentTime = L0; } catch (e) {} if (pref === 'on' && !inVerse) ins.play().catch(() => {}); });
+  ver.addEventListener('ended', () => {   // the verse plays again from the start, gently
+    try { ver.currentTime = 0; } catch (e) {}
+    if (pref === 'on' && inVerse) { ver.volume = 0; ver.play().then(() => fade(ver, VV, 1200), () => {}); }
+  });
+  ins.addEventListener('playing', paint); ins.addEventListener('pause', paint);
+  ver.addEventListener('playing', paint); ver.addEventListener('pause', paint);
   document.addEventListener('visibilitychange', () => {   // silence when the tab/app goes to the background
-    if (document.hidden) { wasPlaying = !a.paused; if (wasPlaying) a.pause(); }
-    else if (wasPlaying && pref === 'on') { wasPlaying = false; a.play().catch(() => {}); }
+    if (document.hidden) { wasPlaying = [ins, ver].filter(el => !el.paused); wasPlaying.forEach(el => el.pause()); }
+    else if (pref === 'on') { wasPlaying.forEach(el => el.play().catch(() => {})); wasPlaying = []; }
   });
   paint();
   if (pref === 'on') start();   // works straight away where the browser allows autoplay; otherwise the button pulses until the first touch
