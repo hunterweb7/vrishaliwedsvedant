@@ -47,7 +47,7 @@ const MR = [
 
   // 5.1 gate
   ['aria-label="Wedding invitation of Vrishali and Vedant. Press Tap to Open."', 'aria-label="वृषाली व वेदांत यांचे शुभविवाह निमंत्रण. उघडण्यासाठी टॅप करा."'],
-  ['<div class="plaque-text"><span class="vv">V&amp;V</span><span class="mr">वृषाली   वेदांत</span></div>', `<div class="plaque-text"><span class="mr">वृषाली${S}वेदांत</span></div>`],
+  [`<div class="plaque-text"><span class="en">Vrishali${S}Vedant</span></div>`, `<div class="plaque-text"><span class="mr">वृषाली${S}वेदांत</span></div>`],
   ['Opening the invitation…', 'निमंत्रण उघडत आहे…'],
   ['<button class="btn" id="openBtn" type="button">Tap to Open</button>', '<button class="btn" id="openBtn" type="button">उघडण्यासाठी टॅप करा</button>'],
 
@@ -127,8 +127,8 @@ const MR = [
   ['<p class="v-lab">Venue</p><p class="v-val">Silver Star Celebration Hall</p><p class="v-small">Shegaon-Rahatgaon Road, Amravati</p>', '<p class="v-lab">विवाहस्थळ</p><p class="v-val">सिल्वर स्टार सेलीब्रेशन हॉल</p><p class="v-small">शेगाव-रहाटगांव रोड, अमरावती</p>'],
   ['<svg aria-hidden="true"><use href="#i-cal"/></svg>Add to Calendar</button>', '<svg aria-hidden="true"><use href="#i-cal"/></svg>कॅलेंडरमध्ये जोडा</button>'],
   ['<svg aria-hidden="true"><use href="#i-pin"/></svg>Get Directions</a>', '<svg aria-hidden="true"><use href="#i-pin"/></svg>मार्ग पहा</a>'],
-  ['<p class="dev" lang="mr">तिथी मार्गशीर्ष कृ. ९ शके १९४८ शुक्रवार दि. १ जानेवारी २०२७ सकाळी १०.३० वा.</p>', '<h4>* विवाह मुहूर्त *</h4><p class="dev" lang="mr">मिती मार्गशीर्ष कृ.९ शके १९४८<br>शुक्रवार दि. १जानेवारी २०२७<br>सकाळी १०.३० वा.</p>'],
-  ['<p class="dev" lang="mr">सिल्वर स्टार सेलिब्रेशन हॉल, शेगाव-रहाटगाव रोड, अमरावती</p>', '<h4>* विवाहस्थळ *</h4><p class="dev" lang="mr">सिल्वर स्टार<br>सेलीब्रेशन हॉल<br>शेगाव-रहाटगांव रोड<br>अमरावती</p>'],
+  ['<h4>Wedding Muhurat</h4><p>Margashirsha Krishna 9, Shaka 1948<br>Friday, 1 January 2027<br>10:30 AM</p>', '<h4>* विवाह मुहूर्त *</h4><p class="dev" lang="mr">मिती मार्गशीर्ष कृ.९ शके १९४८<br>शुक्रवार दि. १जानेवारी २०२७<br>सकाळी १०.३० वा.</p>'],
+  ['<h4>Wedding Venue</h4><p>Silver Star<br>Celebration Hall<br>Shegaon-Rahatgaon Road<br>Amravati</p>', '<h4>* विवाहस्थळ *</h4><p class="dev" lang="mr">सिल्वर स्टार<br>सेलीब्रेशन हॉल<br>शेगाव-रहाटगांव रोड<br>अमरावती</p>'],
   ['&amp;hl=en&amp;output=embed" title="Google Maps: Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati"', '&amp;hl=mr&amp;output=embed" title="Google नकाशा: सिल्वर स्टार सेलीब्रेशन हॉल, शेगाव-रहाटगांव रोड, अमरावती"'],
   ['<span class="map-label">Silver Star Celebration Hall</span><span class="map-addr">Shegaon-Rahatgaon Road, Amravati</span>', '<span class="map-label">सिल्वर स्टार सेलीब्रेशन हॉल</span><span class="map-addr">शेगाव-रहाटगांव रोड, अमरावती</span>'],
   ['<svg aria-hidden="true"><use href="#i-pin"/></svg>Open in Google Maps</a>', '<svg aria-hidden="true"><use href="#i-pin"/></svg>Google Maps मध्ये उघडा</a>'],
