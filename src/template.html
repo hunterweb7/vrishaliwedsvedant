@@ -607,6 +607,10 @@ svg.defs{position:absolute;width:0;height:0;overflow:hidden}
 .snd svg .body{fill:currentColor;fill-opacity:.22}
 .snd[data-state="on"] .i-off,.snd[data-state="off"] .i-on{display:none}
 .snd.hint::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:1px solid rgba(232,211,160,.85);animation:sndPulse 2.2s ease-out infinite;pointer-events:none}
+.snd .tip{display:none;position:absolute;right:calc(100% + 10px);top:50%;margin-top:-18px;height:36px;padding:0 14px;align-items:center;white-space:nowrap;border-radius:999px;background:rgba(251,243,228,.95);color:var(--burg);border:1px solid rgba(156,122,60,.6);box-shadow:0 8px 20px -12px rgba(92,35,48,.55);font-family:var(--f-label);font-size:14px;letter-spacing:.04em;animation:tipIn .6s .4s both}
+.snd.hint .tip{display:flex}
+@keyframes tipIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.snd .tip{animation:none}}
 @keyframes sndPulse{0%{transform:scale(.82);opacity:.95}100%{transform:scale(1.4);opacity:0}}
 .lb:not([hidden]) ~ .snd{opacity:0;pointer-events:none}   /* the photo viewer's own close button sits in the same corner */
 
@@ -1117,7 +1121,7 @@ html[lang="mr"] .f-bo{font-size:16px;line-height:1.7;max-width:560px;margin-left
 <!-- ===== MUSIC: #bgm = instrumental on the gate (its soft opening, seconds loop-from..loop-to, repeats), #bgv = the sung verse that fades in when the doors open. data-vol = loudness 0-1 ===== -->
 <audio id="bgm" src="assets/audio/instrumental.mp3" preload="auto" playsinline data-vol="1" data-loop-from="1" data-loop-to="33.5"></audio>
 <audio id="bgv" src="assets/audio/verse.mp3" preload="metadata" playsinline data-vol="0.55"></audio>
-<button class="snd" id="sndBtn" type="button" data-state="off" data-label-on="Mute music" data-label-off="Play music" aria-label="Play music">
+<button class="snd" id="sndBtn" type="button" data-state="off" data-label-on="Mute music" data-label-off="Play music" aria-label="Play music"><span class="tip" aria-hidden="true">Tap for music</span>
   <svg viewBox="0 0 24 24" aria-hidden="true"><path class="body" d="M4 9.5v5h3.6L12.5 19V5L7.6 9.5H4z"/><g class="i-on"><path d="M15.8 9.2a4 4 0 0 1 0 5.6"/><path d="M18.4 6.6a7.7 7.7 0 0 1 0 10.8"/></g><g class="i-off"><path d="M16 9.6l5 4.8M21 9.6l-5 4.8"/></g></svg>
 </button>
 
@@ -1549,7 +1553,7 @@ const MUSIC = (() => {
       if (ins.currentTime >= L1 - 1.1) { looping = true; fade(ins, 0, 1000, () => { try { ins.currentTime = L0; } catch (e) {} fade(ins, VI, 1300, () => { looping = false; }); }); }
     }, 120);
   }
-  function start() {
+  function start(quick) {   // quick = begun by the same tap that opens the doors, so it must be audible almost at once
     if (pref !== 'on') { paint(); return Promise.resolve(false); }
     const a = cur();
     if (!a.paused) { paint(); return Promise.resolve(true); }
@@ -1557,7 +1561,7 @@ const MUSIC = (() => {
     const p = a.play();
     const ok = () => {
       if (a === ins && inVerse) { ins.pause(); return true; }   // the doors opened while this was still starting
-      started = true; fade(a, a === ins ? VI : VV, a === ins ? 1500 : 700);
+      started = true; fade(a, a === ins ? VI : VV, a === ins ? (quick ? 450 : 1500) : 700);
       if (a === ins) watchLoop();
       paint(); return true;
     };
@@ -1598,10 +1602,10 @@ const MUSIC = (() => {
     if (e.target && e.target.closest && e.target.closest('.snd')) return;
     prime();
     if (started || pref !== 'on' || inVerse) return;
-    start().then(ok => { if (ok) GESTURES.forEach(g => removeEventListener(g, first, true)); });
+    start(e.quick || !!(e.target && e.target.closest && e.target.closest('#gate'))).then(ok => { if (ok) GESTURES.forEach(g => removeEventListener(g, first, true)); });
   };
   // pointerdown suits Chrome/Android; iOS Safari only counts touchend/click as a permission to play sound
-  const GESTURES = ['pointerdown', 'touchend', 'click', 'keydown'];
+  const GESTURES = ['pointerdown', 'mousedown', 'pointerup', 'touchend', 'click', 'keydown'];
   GESTURES.forEach(g => addEventListener(g, first, true));
   ins.addEventListener('ended', () => { try { ins.currentTime = L0; } catch (e) {} if (pref === 'on' && !inVerse) ins.play().catch(() => {}); });
   ver.addEventListener('ended', () => {   // the verse plays again from the start, gently
@@ -1616,7 +1620,7 @@ const MUSIC = (() => {
   });
   paint();
   if (pref === 'on') start();   // works straight away where the browser allows autoplay; otherwise the button pulses until the first touch
-  return { gesture: () => first({}), verse };
+  return { gesture: () => first({ quick: true }), verse };
 })();
 
 /* ===== 5.1 OPENING REVEAL LOGIC ===== */
