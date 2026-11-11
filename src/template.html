@@ -47,6 +47,7 @@
 <meta property="og:title" content="Vrishali &amp; Vedant · Wedding Invitation">
 <meta property="og:description" content="Friday, 1 January 2027 · 10:30 AM · Silver Star Celebration Hall, Shegaon-Rahatgaon Road, Amravati">
 <meta name="theme-color" content="#5C2330">
+<meta name="color-scheme" content="only light">
 <script>document.documentElement.classList.add('js','locked');</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,6 +70,9 @@
 *,*::before,*::after{box-sizing:border-box}
 html,body{overflow-x:clip}
 html{-webkit-text-size-adjust:100%;background:var(--ivory)}
+/* the invitation is designed in light colours only: stop phone "dark mode for websites" from inverting it
+   (that is what turns the couple's black hair white and darkens the cream background) */
+:root{color-scheme:only light}
 html.locked{overflow:hidden}
 body{margin:0;font-family:var(--f-body);font-weight:500;font-size:18px;line-height:1.6;color:var(--ink);background:var(--ivory);-webkit-font-smoothing:antialiased;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 img{display:block;max-width:100%}
